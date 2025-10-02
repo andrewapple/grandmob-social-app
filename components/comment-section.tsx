@@ -1,0 +1,403 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
+import { MessageCircle, Send, Trash2, Heart } from "lucide-react"
+import { useRouter } from "next/navigation"
+
+interface Comment {
+  id: string
+  content: string
+  created_at: string
+  author_id: string
+  parent_comment_id: string | null
+  profiles: {
+    id: string
+    name: string
+    avatar_url: string | null
+  }
+}
+
+interface CommentSectionProps {
+  postId: string
+  currentUserId: string
+}
+
+export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
+  const [comments, setComments] = useState<Comment[]>([])
+  const [newComment, setNewComment] = useState("")
+  const [replyingTo, setReplyingTo] = useState<string | null>(null)
+  const [replyContent, setReplyContent] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [showComments, setShowComments] = useState(false)
+  const [commentLikes, setCommentLikes] = useState<Record<string, { count: number; isLiked: boolean }>>({})
+  const router = useRouter()
+
+  const getAnimalAvatar = (id: string) => {
+    const animals = ["🦁", "🐼", "🦊", "🐨", "🐸", "🦉", "🐷", "🐮", "🐵", "🐶"]
+    const index = Number.parseInt(id.slice(0, 8), 16) % animals.length
+    return animals[index]
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+    if (diffInSeconds < 60) return "just now"
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  }
+
+  useEffect(() => {
+    if (showComments) {
+      fetchComments()
+    }
+  }, [showComments, postId])
+
+  const fetchComments = async () => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("comments")
+      .select(
+        `
+        *,
+        profiles (
+          id,
+          name,
+          avatar_url
+        )
+      `,
+      )
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true })
+
+    if (!error && data) {
+      setComments(data as Comment[])
+      // Fetch likes for all comments
+      await fetchAllCommentLikes(data.map((c) => c.id))
+    }
+  }
+
+  const fetchAllCommentLikes = async (commentIds: string[]) => {
+    const supabase = createClient()
+    const likesData: Record<string, { count: number; isLiked: boolean }> = {}
+
+    for (const commentId of commentIds) {
+      // Get count
+      const { count } = await supabase
+        .from("comment_likes")
+        .select("*", { count: "exact", head: true })
+        .eq("comment_id", commentId)
+
+      // Check if user liked
+      const { data } = await supabase
+        .from("comment_likes")
+        .select("id")
+        .eq("comment_id", commentId)
+        .eq("user_id", currentUserId)
+        .single()
+
+      likesData[commentId] = {
+        count: count || 0,
+        isLiked: !!data,
+      }
+    }
+
+    setCommentLikes(likesData)
+  }
+
+  const handleLikeComment = async (commentId: string) => {
+    const supabase = createClient()
+    const currentLike = commentLikes[commentId] || { count: 0, isLiked: false }
+
+    try {
+      if (currentLike.isLiked) {
+        // Unlike
+        const { error } = await supabase
+          .from("comment_likes")
+          .delete()
+          .eq("comment_id", commentId)
+          .eq("user_id", currentUserId)
+
+        if (error) throw error
+
+        setCommentLikes((prev) => ({
+          ...prev,
+          [commentId]: { count: prev[commentId].count - 1, isLiked: false },
+        }))
+      } else {
+        // Like
+        const { error } = await supabase.from("comment_likes").insert({
+          comment_id: commentId,
+          user_id: currentUserId,
+        })
+
+        if (error) throw error
+
+        setCommentLikes((prev) => ({
+          ...prev,
+          [commentId]: { count: (prev[commentId]?.count || 0) + 1, isLiked: true },
+        }))
+      }
+    } catch (error) {
+      console.error("Error toggling comment like:", error)
+    }
+  }
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newComment.trim()) return
+
+    setIsLoading(true)
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase.from("comments").insert({
+        post_id: postId,
+        author_id: currentUserId,
+        content: newComment.trim(),
+        parent_comment_id: null,
+      })
+
+      if (error) throw error
+
+      setNewComment("")
+      await fetchComments()
+      router.refresh()
+    } catch (error) {
+      console.error("Error adding comment:", error)
+      alert("Failed to add comment")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleAddReply = async (parentId: string) => {
+    if (!replyContent.trim()) return
+
+    setIsLoading(true)
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase.from("comments").insert({
+        post_id: postId,
+        author_id: currentUserId,
+        content: replyContent.trim(),
+        parent_comment_id: parentId,
+      })
+
+      if (error) throw error
+
+      setReplyContent("")
+      setReplyingTo(null)
+      await fetchComments()
+      router.refresh()
+    } catch (error) {
+      console.error("Error adding reply:", error)
+      alert("Failed to add reply")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("Are you sure you want to delete this comment?")) return
+
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase.from("comments").delete().eq("id", commentId)
+
+      if (error) throw error
+
+      await fetchComments()
+      router.refresh()
+    } catch (error) {
+      console.error("Error deleting comment:", error)
+      alert("Failed to delete comment")
+    }
+  }
+
+  const topLevelComments = comments.filter((c) => !c.parent_comment_id)
+  const getReplies = (commentId: string) => comments.filter((c) => c.parent_comment_id === commentId)
+
+  return (
+    <div className="space-y-3">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setShowComments(!showComments)}
+        className="text-amber-700 hover:text-amber-900 hover:bg-amber-50"
+      >
+        <MessageCircle className="h-4 w-4 mr-2" />
+        {comments.length} {comments.length === 1 ? "Comment" : "Comments"}
+      </Button>
+
+      {showComments && (
+        <div className="space-y-4 pt-2 border-t border-amber-200">
+          <form onSubmit={handleAddComment} className="space-y-2">
+            <Textarea
+              placeholder="Write a comment..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              rows={2}
+              className="resize-none"
+            />
+            <div className="flex justify-end">
+              <Button type="submit" size="sm" disabled={isLoading} className="bg-amber-600 hover:bg-amber-700">
+                <Send className="h-3 w-3 mr-2" />
+                Comment
+              </Button>
+            </div>
+          </form>
+
+          <div className="space-y-3">
+            {topLevelComments.map((comment) => {
+              const likes = commentLikes[comment.id] || { count: 0, isLiked: false }
+              return (
+                <div key={comment.id} className="space-y-2">
+                  <div className="flex gap-2">
+                    <Avatar className="h-8 w-8 border border-amber-200">
+                      <AvatarImage src={comment.profiles.avatar_url || undefined} alt={comment.profiles.name} />
+                      <AvatarFallback className="text-sm bg-amber-100">
+                        {getAnimalAvatar(comment.profiles.id)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 bg-amber-50 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm text-amber-900">{comment.profiles.name}</p>
+                          <p className="text-xs text-amber-600">{formatDate(comment.created_at)}</p>
+                        </div>
+                        {comment.author_id === currentUserId && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-sm text-amber-900 whitespace-pre-wrap">{comment.content}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleLikeComment(comment.id)}
+                          className={`h-6 px-2 text-xs ${
+                            likes.isLiked ? "text-red-600 hover:text-red-700" : "text-amber-700 hover:text-amber-900"
+                          } hover:bg-amber-100`}
+                        >
+                          <Heart className={`h-3 w-3 mr-1 ${likes.isLiked ? "fill-current" : ""}`} />
+                          {likes.count}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                          className="h-6 px-2 text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+                        >
+                          Reply
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {replyingTo === comment.id && (
+                    <div className="ml-10 space-y-2">
+                      <Textarea
+                        placeholder="Write a reply..."
+                        value={replyContent}
+                        onChange={(e) => setReplyContent(e.target.value)}
+                        rows={2}
+                        className="resize-none"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setReplyingTo(null)
+                            setReplyContent("")
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleAddReply(comment.id)}
+                          disabled={isLoading}
+                          className="bg-amber-600 hover:bg-amber-700"
+                        >
+                          <Send className="h-3 w-3 mr-2" />
+                          Reply
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {getReplies(comment.id).map((reply) => {
+                    const replyLikes = commentLikes[reply.id] || { count: 0, isLiked: false }
+                    return (
+                      <div key={reply.id} className="ml-10 flex gap-2">
+                        <Avatar className="h-7 w-7 border border-amber-200">
+                          <AvatarImage src={reply.profiles.avatar_url || undefined} alt={reply.profiles.name} />
+                          <AvatarFallback className="text-xs bg-amber-100">
+                            {getAnimalAvatar(reply.profiles.id)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 bg-amber-50 rounded-lg p-2">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-xs text-amber-900">{reply.profiles.name}</p>
+                              <p className="text-xs text-amber-600">{formatDate(reply.created_at)}</p>
+                            </div>
+                            {reply.author_id === currentUserId && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteComment(reply.id)}
+                                className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-xs text-amber-900 whitespace-pre-wrap">{reply.content}</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleLikeComment(reply.id)}
+                            className={`h-5 px-2 mt-1 text-xs ${
+                              replyLikes.isLiked
+                                ? "text-red-600 hover:text-red-700"
+                                : "text-amber-700 hover:text-amber-900"
+                            } hover:bg-amber-100`}
+                          >
+                            <Heart className={`h-3 w-3 mr-1 ${replyLikes.isLiked ? "fill-current" : ""}`} />
+                            {replyLikes.count}
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

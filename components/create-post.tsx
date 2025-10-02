@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { ImagePlus, Send } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { put } from "@vercel/blob"
 
 interface CreatePostProps {
   userId: string
@@ -53,12 +52,21 @@ export function CreatePost({ userId }: CreatePostProps) {
     try {
       let imageUrl: string | null = null
 
-      // Upload image to Vercel Blob if present
       if (imageFile) {
-        const blob = await put(imageFile.name, imageFile, {
-          access: "public",
+        const formData = new FormData()
+        formData.append("file", imageFile)
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
         })
-        imageUrl = blob.url
+
+        if (!response.ok) {
+          throw new Error("Failed to upload image")
+        }
+
+        const data = await response.json()
+        imageUrl = data.url
       }
 
       // Create post

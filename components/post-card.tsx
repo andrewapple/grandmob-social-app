@@ -3,10 +3,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Trash2 } from "lucide-react"
+import { Trash2, Heart } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { CommentSection } from "./comment-section"
 
 interface Post {
   id: string
@@ -28,7 +29,70 @@ interface PostCardProps {
 
 export function PostCard({ post, currentUserId }: PostCardProps) {
   const [isDeleting, setIsDeleting] = useState(false)
+  const [likesCount, setLikesCount] = useState(0)
+  const [isLiked, setIsLiked] = useState(false)
+  const [isLiking, setIsLiking] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    fetchLikes()
+  }, [post.id, currentUserId])
+
+  const fetchLikes = async () => {
+    const supabase = createClient()
+
+    // Get total likes count
+    const { count } = await supabase
+      .from("post_likes")
+      .select("*", { count: "exact", head: true })
+      .eq("post_id", post.id)
+
+    setLikesCount(count || 0)
+
+    // Check if current user liked this post
+    const { data } = await supabase
+      .from("post_likes")
+      .select("id")
+      .eq("post_id", post.id)
+      .eq("user_id", currentUserId)
+      .single()
+
+    setIsLiked(!!data)
+  }
+
+  const handleLike = async () => {
+    if (isLiking) return
+
+    setIsLiking(true)
+    const supabase = createClient()
+
+    try {
+      if (isLiked) {
+        // Unlike
+        const { error } = await supabase.from("post_likes").delete().eq("post_id", post.id).eq("user_id", currentUserId)
+
+        if (error) throw error
+
+        setIsLiked(false)
+        setLikesCount((prev) => prev - 1)
+      } else {
+        // Like
+        const { error } = await supabase.from("post_likes").insert({
+          post_id: post.id,
+          user_id: currentUserId,
+        })
+
+        if (error) throw error
+
+        setIsLiked(true)
+        setLikesCount((prev) => prev + 1)
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error)
+    } finally {
+      setIsLiking(false)
+    }
+  }
 
   const getAnimalAvatar = (id: string) => {
     const animals = ["🦁", "🐼", "🦊", "🐨", "🐸", "🦉", "🐷", "🐮", "🐵", "🐶"]
@@ -107,6 +171,23 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
             className="rounded-lg w-full object-cover max-h-96"
           />
         )}
+
+        <div className="flex items-center gap-4 pt-2 border-t border-amber-200">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLike}
+            disabled={isLiking}
+            className={`${
+              isLiked ? "text-red-600 hover:text-red-700" : "text-amber-700 hover:text-amber-900"
+            } hover:bg-amber-50`}
+          >
+            <Heart className={`h-4 w-4 mr-2 ${isLiked ? "fill-current" : ""}`} />
+            {likesCount} {likesCount === 1 ? "Like" : "Likes"}
+          </Button>
+        </div>
+
+        <CommentSection postId={post.id} currentUserId={currentUserId} />
       </CardContent>
     </Card>
   )
