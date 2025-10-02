@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Pencil, Check, X, Camera } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { ImageCropDialog } from "./image-crop-dialog"
 
 interface Profile {
   id: string
@@ -28,6 +29,8 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
   const [bio, setBio] = useState(profile?.bio || "")
   const [isLoading, setIsLoading] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [cropDialogOpen, setCropDialogOpen] = useState(false)
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null)
   const router = useRouter()
 
   const handleSaveBio = async () => {
@@ -62,12 +65,19 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
     const file = e.target.files?.[0]
     if (!file || !profile) return
 
+    const imageUrl = URL.createObjectURL(file)
+    setSelectedImageUrl(imageUrl)
+    setCropDialogOpen(true)
+  }
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!profile) return
+
     setIsUploadingAvatar(true)
 
     try {
-      // Upload to Vercel Blob
       const formData = new FormData()
-      formData.append("file", file)
+      formData.append("file", croppedBlob, "avatar.jpg")
 
       const response = await fetch("/api/upload", {
         method: "POST",
@@ -80,11 +90,15 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
 
       const data = await response.json()
 
-      // Update profile with new avatar URL
       const supabase = createClient()
       const { error } = await supabase.from("profiles").update({ avatar_url: data.url }).eq("id", profile.id)
 
       if (error) throw error
+
+      if (selectedImageUrl) {
+        URL.revokeObjectURL(selectedImageUrl)
+        setSelectedImageUrl(null)
+      }
 
       router.refresh()
     } catch (error) {
@@ -95,7 +109,6 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
     }
   }
 
-  // Generate animal avatar based on user ID
   const getAnimalAvatar = (id: string) => {
     const animals = ["🦁", "🐼", "🦊", "🐨", "🐸", "🦉", "🐷", "🐮", "🐵", "🐶"]
     const index = Number.parseInt(id.slice(0, 8), 16) % animals.length
@@ -105,97 +118,108 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
   if (!profile) return null
 
   return (
-    <Card className="border-amber-200">
-      <CardContent className="pt-6">
-        <div className="flex flex-col items-center text-center space-y-4">
-          <div className="relative">
-            <Avatar className="h-32 w-32 border-4 border-amber-200">
-              <AvatarImage src={profile.avatar_url || undefined} alt={profile.name} />
-              <AvatarFallback className="text-5xl bg-amber-100">{getAnimalAvatar(profile.id)}</AvatarFallback>
-            </Avatar>
-            {isOwnProfile && (
-              <div className="absolute bottom-0 right-0">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                  id="avatar-upload"
-                  disabled={isUploadingAvatar}
-                />
-                <label htmlFor="avatar-upload">
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="h-10 w-10 rounded-full bg-amber-600 hover:bg-amber-700 cursor-pointer"
+    <>
+      <Card className="border-amber-200">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="relative">
+              <Avatar className="h-32 w-32 border-4 border-amber-200">
+                <AvatarImage src={profile.avatar_url || undefined} alt={profile.name} className="object-cover" />
+                <AvatarFallback className="text-5xl bg-amber-100">{getAnimalAvatar(profile.id)}</AvatarFallback>
+              </Avatar>
+              {isOwnProfile && (
+                <div className="absolute bottom-0 right-0">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                    id="avatar-upload"
                     disabled={isUploadingAvatar}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      document.getElementById("avatar-upload")?.click()
-                    }}
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
-                </label>
-              </div>
-            )}
-          </div>
+                  />
+                  <label htmlFor="avatar-upload">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-10 w-10 rounded-full bg-amber-600 hover:bg-amber-700 cursor-pointer"
+                      disabled={isUploadingAvatar}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        document.getElementById("avatar-upload")?.click()
+                      }}
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </label>
+                </div>
+              )}
+            </div>
 
-          <div className="space-y-2 w-full">
-            <h1 className="text-3xl font-bold text-amber-900">{profile.name}</h1>
+            <div className="space-y-2 w-full">
+              <h1 className="text-3xl font-bold text-amber-900">{profile.name}</h1>
 
-            {isOwnProfile && (
-              <div className="space-y-2">
-                {isEditingBio ? (
-                  <div className="space-y-2">
-                    <Textarea
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                      placeholder="Tell your family about yourself..."
-                      rows={3}
-                      className="resize-none"
-                    />
-                    <div className="flex gap-2 justify-center">
+              {isOwnProfile && (
+                <div className="space-y-2">
+                  {isEditingBio ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Tell your family about yourself..."
+                        rows={3}
+                        className="resize-none"
+                      />
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          size="sm"
+                          onClick={handleSaveBio}
+                          disabled={isLoading}
+                          className="bg-amber-600 hover:bg-amber-700"
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Save
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleCancelEdit} disabled={isLoading}>
+                          <X className="h-4 w-4 mr-1" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-amber-700 text-pretty leading-relaxed">
+                        {profile.bio || "No bio yet. Click edit to add one!"}
+                      </p>
                       <Button
                         size="sm"
-                        onClick={handleSaveBio}
-                        disabled={isLoading}
-                        className="bg-amber-600 hover:bg-amber-700"
+                        variant="outline"
+                        onClick={() => setIsEditingBio(true)}
+                        className="border-amber-300 text-amber-900 hover:bg-amber-50"
                       >
-                        <Check className="h-4 w-4 mr-1" />
-                        Save
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={handleCancelEdit} disabled={isLoading}>
-                        <X className="h-4 w-4 mr-1" />
-                        Cancel
+                        <Pencil className="h-4 w-4 mr-1" />
+                        Edit Bio
                       </Button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-amber-700 text-pretty leading-relaxed">
-                      {profile.bio || "No bio yet. Click edit to add one!"}
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setIsEditingBio(true)}
-                      className="border-amber-300 text-amber-900 hover:bg-amber-50"
-                    >
-                      <Pencil className="h-4 w-4 mr-1" />
-                      Edit Bio
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
 
-            {!isOwnProfile && profile.bio && (
-              <p className="text-amber-700 text-pretty leading-relaxed">{profile.bio}</p>
-            )}
+              {!isOwnProfile && profile.bio && (
+                <p className="text-amber-700 text-pretty leading-relaxed">{profile.bio}</p>
+              )}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {selectedImageUrl && (
+        <ImageCropDialog
+          open={cropDialogOpen}
+          onOpenChange={setCropDialogOpen}
+          imageUrl={selectedImageUrl}
+          onCropComplete={handleCropComplete}
+        />
+      )}
+    </>
   )
 }

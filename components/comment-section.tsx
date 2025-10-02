@@ -159,21 +159,35 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
     const supabase = createClient()
 
     try {
-      const { error } = await supabase.from("comments").insert({
+      console.log("[v0] Attempting to insert comment:", {
         post_id: postId,
         author_id: currentUserId,
         content: newComment.trim(),
-        parent_comment_id: null,
       })
 
-      if (error) throw error
+      const { data, error } = await supabase
+        .from("comments")
+        .insert({
+          post_id: postId,
+          author_id: currentUserId,
+          content: newComment.trim(),
+          parent_comment_id: null,
+        })
+        .select()
+
+      if (error) {
+        console.error("[v0] Error inserting comment:", error)
+        throw error
+      }
+
+      console.log("[v0] Comment inserted successfully:", data)
 
       setNewComment("")
       await fetchComments()
       router.refresh()
     } catch (error) {
-      console.error("Error adding comment:", error)
-      alert("Failed to add comment")
+      console.error("[v0] Error adding comment:", error)
+      alert("Failed to add comment. Please make sure you're logged in.")
     } finally {
       setIsLoading(false)
     }
@@ -186,22 +200,37 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
     const supabase = createClient()
 
     try {
-      const { error } = await supabase.from("comments").insert({
+      console.log("[v0] Attempting to insert reply:", {
         post_id: postId,
         author_id: currentUserId,
         content: replyContent.trim(),
         parent_comment_id: parentId,
       })
 
-      if (error) throw error
+      const { data, error } = await supabase
+        .from("comments")
+        .insert({
+          post_id: postId,
+          author_id: currentUserId,
+          content: replyContent.trim(),
+          parent_comment_id: parentId,
+        })
+        .select()
+
+      if (error) {
+        console.error("[v0] Error inserting reply:", error)
+        throw error
+      }
+
+      console.log("[v0] Reply inserted successfully:", data)
 
       setReplyContent("")
       setReplyingTo(null)
       await fetchComments()
       router.refresh()
     } catch (error) {
-      console.error("Error adding reply:", error)
-      alert("Failed to add reply")
+      console.error("[v0] Error adding reply:", error)
+      alert("Failed to add reply. Please make sure you're logged in.")
     } finally {
       setIsLoading(false)
     }
