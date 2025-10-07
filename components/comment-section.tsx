@@ -68,7 +68,7 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
       .select(
         `
         *,
-        profiles (
+        profiles!comments_author_id_fkey (
           id,
           name,
           avatar_url
@@ -78,7 +78,12 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
       .eq("post_id", postId)
       .order("created_at", { ascending: true })
 
-    if (!error && data) {
+    if (error) {
+      console.error("Error fetching comments:", error)
+      return
+    }
+
+    if (data) {
       setComments(data as Comment[])
       // Fetch likes for all comments
       await fetchAllCommentLikes(data.map((c) => c.id))
@@ -159,12 +164,6 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
     const supabase = createClient()
 
     try {
-      console.log("[v0] Attempting to insert comment:", {
-        post_id: postId,
-        author_id: currentUserId,
-        content: newComment.trim(),
-      })
-
       const { data, error } = await supabase
         .from("comments")
         .insert({
@@ -176,18 +175,16 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
         .select()
 
       if (error) {
-        console.error("[v0] Error inserting comment:", error)
+        console.error("Error inserting comment:", error)
         throw error
       }
-
-      console.log("[v0] Comment inserted successfully:", data)
 
       setNewComment("")
       await fetchComments()
       router.refresh()
     } catch (error) {
-      console.error("[v0] Error adding comment:", error)
-      alert("Failed to add comment. Please make sure you're logged in.")
+      console.error("Error adding comment:", error)
+      alert("Failed to add comment. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -200,13 +197,6 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
     const supabase = createClient()
 
     try {
-      console.log("[v0] Attempting to insert reply:", {
-        post_id: postId,
-        author_id: currentUserId,
-        content: replyContent.trim(),
-        parent_comment_id: parentId,
-      })
-
       const { data, error } = await supabase
         .from("comments")
         .insert({
@@ -218,19 +208,17 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
         .select()
 
       if (error) {
-        console.error("[v0] Error inserting reply:", error)
+        console.error("Error inserting reply:", error)
         throw error
       }
-
-      console.log("[v0] Reply inserted successfully:", data)
 
       setReplyContent("")
       setReplyingTo(null)
       await fetchComments()
       router.refresh()
     } catch (error) {
-      console.error("[v0] Error adding reply:", error)
-      alert("Failed to add reply. Please make sure you're logged in.")
+      console.error("Error adding reply:", error)
+      alert("Failed to add reply. Please try again.")
     } finally {
       setIsLoading(false)
     }
