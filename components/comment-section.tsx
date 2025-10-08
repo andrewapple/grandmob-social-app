@@ -90,6 +90,10 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
     }
   }
 
+  useEffect(() => {
+  fetchComments()
+}, [])
+
   const fetchAllCommentLikes = async (commentIds: string[]) => {
     const supabase = createClient()
     const likesData: Record<string, { count: number; isLiked: boolean }> = {}
