@@ -13,19 +13,6 @@ I want to add a calendar feature for all family events. Maybe use a GCal embed. 
 
 ## Deployment
 
-Your project is live at:
+We'll do it live!:
 
 **[https://vercel.com/andrews-projects-9e23836c/v0-grandmob-social-app](https://vercel.com/andrews-projects-9e23836c/v0-grandmob-social-app)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/projects/tHwky6VhGvB](https://v0.app/chat/projects/tHwky6VhGvB)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
