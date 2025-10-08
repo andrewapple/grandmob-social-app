@@ -254,7 +254,8 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
         className="text-amber-700 hover:text-amber-900 hover:bg-amber-50"
       >
         <MessageCircle className="h-4 w-4 mr-2" />
-        {comments.length} {comments.length === 1 ? "View Comment" : "View Comments"}
+
+        {comments.length === 0 ? "| Add Comment" : `${comments.length} ${comments.length === 1 ? "| View Comment" : "| View Comments"}`}
       </Button>
 
       {showComments && (
