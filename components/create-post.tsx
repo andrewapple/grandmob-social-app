@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { ImagePlus, Send } from "lucide-react"
+import { ImagePlus, Send, Video } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
@@ -18,6 +18,8 @@ export function CreatePost({ userId }: CreatePostProps) {
   const [content, setContent] = useState("")
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [videoPreview, setVideoPreview] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
@@ -33,16 +35,33 @@ export function CreatePost({ userId }: CreatePostProps) {
     }
   }
 
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setVideoFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setVideoPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleRemoveImage = () => {
     setImageFile(null)
     setImagePreview(null)
   }
 
+  const handleRemoveVideo = () => {
+    setVideoFile(null)
+    setVideoPreview(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!content.trim() && !imageFile) {
-      alert("Please add some content or an image")
+    if (!content.trim() && !imageFile && !videoFile) {
+      alert("Please add some content, an image, or a video")
       return
     }
 
@@ -51,6 +70,7 @@ export function CreatePost({ userId }: CreatePostProps) {
 
     try {
       let imageUrl: string | null = null
+      let videoUrl: string | null = null
 
       if (imageFile) {
         const formData = new FormData()
@@ -69,19 +89,37 @@ export function CreatePost({ userId }: CreatePostProps) {
         imageUrl = data.url
       }
 
-      // Create post
+      if (videoFile) {
+        const formData = new FormData()
+        formData.append("file", videoFile)
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to upload video")
+        }
+
+        const data = await response.json()
+        videoUrl = data.url
+      }
+
       const { error } = await supabase.from("posts").insert({
         author_id: userId,
         content: content.trim() || null,
         image_url: imageUrl,
+        video_url: videoUrl,
       })
 
       if (error) throw error
 
-      // Reset form
       setContent("")
       setImageFile(null)
       setImagePreview(null)
+      setVideoFile(null)
+      setVideoPreview(null)
       router.refresh()
     } catch (error) {
       console.error("Error creating post:", error)
@@ -122,8 +160,23 @@ export function CreatePost({ userId }: CreatePostProps) {
             </div>
           )}
 
+          {videoPreview && (
+            <div className="relative">
+              <video src={videoPreview} controls className="rounded-lg w-full max-h-64" />
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                onClick={handleRemoveVideo}
+                className="absolute top-2 right-2"
+              >
+                Remove
+              </Button>
+            </div>
+          )}
+
           <div className="flex gap-2 justify-between items-center">
-            <div>
+            <div className="flex gap-2">
               <input
                 type="file"
                 accept="image/*"
@@ -146,6 +199,31 @@ export function CreatePost({ userId }: CreatePostProps) {
                 >
                   <ImagePlus className="h-4 w-4 mr-2" />
                   Add Photo
+                </Button>
+              </label>
+
+              <input
+                type="file"
+                accept="video/*"
+                onChange={handleVideoChange}
+                className="hidden"
+                id="video-upload"
+                disabled={isLoading}
+              />
+              <label htmlFor="video-upload">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-amber-300 text-amber-900 hover:bg-amber-50 cursor-pointer bg-transparent"
+                  disabled={isLoading}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    document.getElementById("video-upload")?.click()
+                  }}
+                >
+                  <Video className="h-4 w-4 mr-2" />
+                  Add Video
                 </Button>
               </label>
             </div>
