@@ -1,37 +1,42 @@
-import { put } from "@vercel/blob"
-import { NextResponse } from "next/server"
-
-export const runtime = "nodejs"
-export const maxDuration = 60 // Reduced maxDuration from 300 to 60 seconds to comply with Vercel limits
-export const maxBodySize = "100mb"
+// /app/api/upload/route.ts
+import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
-    console.log("one")
     const formData = await request.formData()
-    console.log("two")
     const file = formData.get("file") as File
-    console.log("three")
+
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
-    console.log("Uploading file:", file.name, file.size, file.type)
+    const supabase = createClient(
+      process.env.yegpxumejnwdglchzydm.supabase.co!,
+      process.env.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllZ3B4dW1lam53ZGdsY2h6eWRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTE3MzA0MywiZXhwIjoyMDc0NzQ5MDQzfQ.kdZQGNEv5-1j-LIbdhfHQzPm0SFA30mhKXWyQJSiAbo! 
+    )
 
-    const maxSize = 100 * 1024 * 1024 // 100MB
-    if (file.size > maxSize) {
-      return NextResponse.json({ error: "File size exceeds 100MB limit" }, { status: 413 })
-    }
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Date.now()}.${fileExt}`
+    const filePath = `videos/${fileName}`
 
-    const blob = await put(file.name, file, {
-      access: "public",
-    })
+    const { data, error } = await supabase.storage
+      .from("videos")
+      .upload(filePath, file, {
+        contentType: file.type,
+        cacheControl: "3600",
+        upsert: false,
+      })
 
-    console.log("Upload successful:", blob.url)
+    if (error) throw error
 
-    return NextResponse.json({ url: blob.url })
+    const { data: publicUrlData } = supabase.storage
+      .from("videos")
+      .getPublicUrl(filePath)
+
+    return NextResponse.json({ url: publicUrlData.publicUrl })
   } catch (error) {
-    console.error("Error uploading file:", error)
+    console.error("Upload failed:", error)
     return NextResponse.json({ error: "Failed to upload file" }, { status: 500 })
   }
 }
