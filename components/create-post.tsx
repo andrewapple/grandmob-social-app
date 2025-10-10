@@ -38,6 +38,12 @@ export function CreatePost({ userId }: CreatePostProps) {
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      const maxSize = 100 * 1024 * 1024 // 100MB
+      if (file.size > maxSize) {
+        alert("Video file size must be less than 100MB")
+        return
+      }
+
       setVideoFile(file)
       const reader = new FileReader()
       reader.onloadend = () => {
@@ -82,7 +88,8 @@ export function CreatePost({ userId }: CreatePostProps) {
         })
 
         if (!response.ok) {
-          throw new Error("Failed to upload image")
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || "Failed to upload image")
         }
 
         const data = await response.json()
@@ -99,7 +106,8 @@ export function CreatePost({ userId }: CreatePostProps) {
         })
 
         if (!response.ok) {
-          throw new Error("Failed to upload video")
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || "Failed to upload video")
         }
 
         const data = await response.json()
@@ -123,7 +131,7 @@ export function CreatePost({ userId }: CreatePostProps) {
       router.refresh()
     } catch (error) {
       console.error("Error creating post:", error)
-      alert("Failed to create post")
+      alert(error instanceof Error ? error.message : "Failed to create post")
     } finally {
       setIsLoading(false)
     }
