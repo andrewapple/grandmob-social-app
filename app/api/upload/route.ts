@@ -12,8 +12,8 @@ export async function POST(request: Request) {
     }
 
     const supabase = createClient(
-      process.env.yegpxumejnwdglchzydm.supabase.co!,
-      process.env.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllZ3B4dW1lam53ZGdsY2h6eWRtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTE3MzA0MywiZXhwIjoyMDc0NzQ5MDQzfQ.kdZQGNEv5-1j-LIbdhfHQzPm0SFA30mhKXWyQJSiAbo! 
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY! 
     )
 
     const fileExt = file.name.split('.').pop()
