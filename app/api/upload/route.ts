@@ -7,9 +7,11 @@ export const maxBodySize = "100mb"
 
 export async function POST(request: Request) {
   try {
+    console.log("one");
     const formData = await request.formData()
+    console.log("two");
     const file = formData.get("file") as File
-
+    console.log("three");
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
