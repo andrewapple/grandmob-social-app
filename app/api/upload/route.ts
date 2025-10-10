@@ -1,29 +1,37 @@
-import { createClient } from '@supabase/supabase-js'
-import { NextResponse } from 'next/server'
+import { put } from "@vercel/blob"
+import { NextResponse } from "next/server"
+
+export const runtime = "nodejs"
+export const maxDuration = 60 // Reduced maxDuration from 300 to 60 seconds to comply with Vercel limits
+export const maxBodySize = "100mb"
 
 export async function POST(request: Request) {
-  const formData = await request.formData()
-  const file = formData.get("file") as File
-  if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 })
+  try {
+    console.log("one")
+    const formData = await request.formData()
+    console.log("two")
+    const file = formData.get("file") as File
+    console.log("three")
+    if (!file) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+    console.log("Uploading file:", file.name, file.size, file.type)
 
-  const filePath = `videos/${Date.now()}-${file.name}`
-  const { data, error } = await supabase.storage.from("videos").upload(filePath, file, {
-    contentType: file.type,
-    cacheControl: "3600",
-    upsert: false,
-  })
+    const maxSize = 100 * 1024 * 1024 // 100MB
+    if (file.size > maxSize) {
+      return NextResponse.json({ error: "File size exceeds 100MB limit" }, { status: 413 })
+    }
 
-  if (error) {
-    console.error(error)
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
+    const blob = await put(file.name, file, {
+      access: "public",
+    })
+
+    console.log("Upload successful:", blob.url)
+
+    return NextResponse.json({ url: blob.url })
+  } catch (error) {
+    console.error("Error uploading file:", error)
+    return NextResponse.json({ error: "Failed to upload file" }, { status: 500 })
   }
-
-  const { data: publicUrl } = supabase.storage.from("videos").getPublicUrl(filePath)
-
-  return NextResponse.json({ url: publicUrl.publicUrl })
 }
