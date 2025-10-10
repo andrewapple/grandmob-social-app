@@ -23,6 +23,31 @@ export function CreatePost({ userId }: CreatePostProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  // 📌 Add uploadVideo here — above handleSubmit
+  async function uploadVideo(file: File) {
+    const filePath = `videos/${Date.now()}-${file.name}`
+
+    const { data, error } = await supabase.storage
+      .from("videos") // your bucket name
+      .upload(filePath, file)
+
+    if (error) {
+      console.error("Upload error:", error)
+      return null
+    }
+
+    const { data: publicData } = supabase.storage
+      .from("videos")
+      .getPublicUrl(filePath)
+
+    return publicData.publicUrl
+  }
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -72,7 +97,6 @@ export function CreatePost({ userId }: CreatePostProps) {
     }
 
     setIsLoading(true)
-    const supabase = createClient()
 
     try {
       let imageUrl: string | null = null
@@ -97,21 +121,11 @@ export function CreatePost({ userId }: CreatePostProps) {
       }
 
       if (videoFile) {
-        const formData = new FormData()
-        formData.append("file", videoFile)
-
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.error || "Failed to upload video")
+        // 🔄 Replace old video upload with direct Supabase upload
+        videoUrl = await uploadVideo(videoFile)
+        if (!videoUrl) {
+          throw new Error("Failed to upload video")
         }
-
-        const data = await response.json()
-        videoUrl = data.url
       }
 
       const { error } = await supabase.from("posts").insert({
