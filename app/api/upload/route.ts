@@ -24,9 +24,9 @@ export async function POST(request: Request) {
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '20mb', // increase the upload limit
+      sizeLimit: "20mb", // increase the upload limit
     },
   },
-};
+}
 
-export const maxDuration = 60; // optional, allows longer-running uploads
+export const maxDuration = 60 // optional, allows longer-running uploads
