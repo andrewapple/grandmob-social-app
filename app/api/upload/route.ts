@@ -30,4 +30,3 @@ export const config = {
 };
 
 export const maxDuration = 60; // optional, allows longer-running uploads
-
