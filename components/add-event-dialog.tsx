@@ -43,6 +43,7 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
   const [selectedMinute, setSelectedMinute] = useState("")
   const [selectedAmPm, setSelectedAmPm] = useState("AM")
   const [includeTime, setIncludeTime] = useState(false)
+  const [addToFeed, setAddToFeed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   const getDaysInMonth = () => {
@@ -84,6 +85,31 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
 
       if (error) throw error
 
+      if (addToFeed) {
+        const formattedDate = `${selectedMonth} ${String(selectedDay).padStart(2, "0")}, ${selectedYear}`
+        let formattedTime = ""
+        if (timeStr) {
+          const [hours, minutes] = timeStr.split(":")
+          const hour = Number.parseInt(hours)
+          const ampm = hour >= 12 ? "PM" : "AM"
+          const displayHour = hour % 12 || 12
+          formattedTime = ` ${displayHour}:${minutes} ${ampm}`
+        }
+
+        const postContent = `Event Added: ${eventName.trim()} - ${formattedDate}${formattedTime}`
+
+        const { error: postError } = await supabase.from("posts").insert({
+          author_id: userId,
+          content: postContent,
+          image_url: null,
+          video_url: null,
+        })
+
+        if (postError) {
+          console.error("Error creating post:", postError)
+        }
+      }
+
       setEventName("")
       setSelectedMonth("")
       setSelectedDay("")
@@ -92,6 +118,7 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
       setSelectedMinute("")
       setSelectedAmPm("AM")
       setIncludeTime(false)
+      setAddToFeed(false)
       setOpen(false)
       onEventAdded()
     } catch (error) {
@@ -230,6 +257,21 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
                 </Select>
               </div>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="add-to-feed"
+                checked={addToFeed}
+                onChange={(e) => setAddToFeed(e.target.checked)}
+                className="rounded border-amber-300"
+              />
+              <Label htmlFor="add-to-feed" className="text-amber-900 cursor-pointer">
+                Add to feed
+              </Label>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2">

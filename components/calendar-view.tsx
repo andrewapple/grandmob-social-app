@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { AddEventDialog } from "./add-event-dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -102,13 +104,42 @@ export function CalendarView({ userId }: CalendarViewProps) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
   const emptyDays = Array.from({ length: firstDay }, (_, i) => i)
 
+  const goToPreviousMonth = () => {
+    if (selectedMonth === 0) {
+      setSelectedMonth(11)
+      setSelectedYear(selectedYear - 1)
+    } else {
+      setSelectedMonth(selectedMonth - 1)
+    }
+  }
+
+  const goToNextMonth = () => {
+    if (selectedMonth === 11) {
+      setSelectedMonth(0)
+      setSelectedYear(selectedYear + 1)
+    } else {
+      setSelectedMonth(selectedMonth + 1)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card className="border-amber-200">
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <CardTitle className="text-amber-900">Family Calendar</CardTitle>
+            <CardTitle className="text-amber-900">
+              {MONTHS[selectedMonth]} {selectedYear}
+            </CardTitle>
             <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToPreviousMonth}
+                className="border-amber-300 hover:bg-amber-100 bg-transparent"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
               <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number.parseInt(v))}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue />
@@ -134,6 +165,15 @@ export function CalendarView({ userId }: CalendarViewProps) {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToNextMonth}
+                className="border-amber-300 hover:bg-amber-100 bg-transparent"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
 
               <AddEventDialog userId={userId} onEventAdded={fetchEvents} />
             </div>
