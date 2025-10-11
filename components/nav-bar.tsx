@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Home, User, LogOut } from "lucide-react"
+import { Home, User, LogOut, Calendar } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
@@ -36,6 +36,19 @@ export function NavBar() {
               >
                 <Home className="h-4 w-4 mr-2" />
                 Home
+              </Button>
+            </Link>
+
+            <Link href="/calendar">
+              <Button
+                variant={pathname === "/calendar" ? "default" : "ghost"}
+                size="sm"
+                className={
+                  pathname === "/calendar" ? "bg-amber-600 hover:bg-amber-700" : "text-amber-900 hover:bg-amber-50"
+                }
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Calendar
               </Button>
             </Link>
 
