@@ -148,26 +148,19 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
     }
   }
 
-  const handleAddWishlistItem = async (item: string, description: string, link: string) => {
+  const handleAddWishlistItem = async (item: string) => {
     const supabase = createClient()
 
     const { error: wishlistError } = await supabase.from("wishlist_items").insert({
       user_id: userId,
       item,
-      description: description || null,
-      link: link || null,
+      description: null,
+      link: null,
     })
 
     if (wishlistError) throw wishlistError
 
-    // Create a post announcing the wishlist item
-    let postContent = `${userName} has added something to their Wishlist:\n\n${item}`
-    if (description) {
-      postContent += `\n\n${description}`
-    }
-    if (link) {
-      postContent += `\n\n${link}`
-    }
+    const postContent = `${userName} has added something to their Wishlist:\n\n${item}`
 
     const { error: postError } = await supabase.from("posts").insert({
       author_id: userId,

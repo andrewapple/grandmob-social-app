@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ExternalLink, Trash2 } from "lucide-react"
+import { Trash2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 
@@ -86,35 +86,19 @@ export function WishlistBox({ userId, isOwnProfile }: WishlistBoxProps) {
               : "No items in wishlist yet."}
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {items.map((item) => (
-              <div key={item.id} className="p-3 bg-amber-50 rounded-lg space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-amber-900 break-words">{item.item}</h4>
-                    {item.description && <p className="text-sm text-amber-700 mt-1 break-words">{item.description}</p>}
-                  </div>
-                  {isOwnProfile && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDelete(item.id)}
-                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
-                {item.link && (
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-800 hover:underline break-all"
+              <div key={item.id} className="flex items-center justify-between p-2 bg-amber-50 rounded-lg">
+                <span className="text-amber-900 break-words flex-1">{item.item}</span>
+                {isOwnProfile && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDelete(item.id)}
+                    className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 flex-shrink-0 ml-2"
                   >
-                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                    View Link
-                  </a>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 )}
               </div>
             ))}
