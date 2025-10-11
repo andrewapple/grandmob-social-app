@@ -38,7 +38,7 @@ export default async function HomePage() {
       <div className="max-w-3xl mx-auto p-6 space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-amber-900">Family Feed</h1>
-          <p className="text-amber-700">See what everyone is sharing</p>
+          <p className="text-amber-700">See what the fam is up to</p>
         </div>
 
         <CreatePost userId={user.id} />
