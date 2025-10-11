@@ -66,8 +66,8 @@ export default function SignUpPage() {
       <div className="w-full max-w-md">
         <Card className="border-amber-200">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-amber-900">Join Grandmob</CardTitle>
-            <CardDescription className="text-amber-700">Create your family account</CardDescription>
+            <CardTitle className="text-3xl font-bold text-amber-900">Join The Grandmob</CardTitle>
+            <CardDescription className="text-amber-700">Create your account</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignUp}>
