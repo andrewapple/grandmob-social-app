@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { CommentSection } from "./comment-section"
+import Link from "next/link"
 
 interface Post {
   id: string
@@ -141,12 +142,18 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border-2 border-amber-200">
-              <AvatarImage src={post.profiles.avatar_url || undefined} alt={post.profiles.name} />
-              <AvatarFallback className="text-lg bg-amber-100">{getAnimalAvatar(post.profiles.id)}</AvatarFallback>
-            </Avatar>
+            <Link href={`/profile/${post.profiles.id}`}>
+              <Avatar className="h-10 w-10 border-2 border-amber-200 cursor-pointer hover:border-amber-400 transition-colors">
+                <AvatarImage src={post.profiles.avatar_url || undefined} alt={post.profiles.name} />
+                <AvatarFallback className="text-lg bg-amber-100">{getAnimalAvatar(post.profiles.id)}</AvatarFallback>
+              </Avatar>
+            </Link>
             <div>
-              <p className="font-semibold text-amber-900">{post.profiles.name}</p>
+              <Link href={`/profile/${post.profiles.id}`}>
+                <p className="font-semibold text-amber-900 hover:text-amber-700 cursor-pointer transition-colors">
+                  {post.profiles.name}
+                </p>
+              </Link>
               <p className="text-sm text-amber-600">{formatDate(post.created_at)}</p>
             </div>
           </div>

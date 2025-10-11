@@ -3,10 +3,9 @@ import { createClient } from "@/lib/supabase/server"
 import { NavBar } from "@/components/nav-bar"
 import { ProfileHeader } from "@/components/profile-header"
 import { PostCard } from "@/components/post-card"
-import { CreatePost } from "@/components/create-post"
 import { WishlistBox } from "@/components/wishlist-box"
 
-export default async function ProfilePage() {
+export default async function UserProfilePage({ params }: { params: { userId: string } }) {
   const supabase = await createClient()
 
   const {
@@ -18,8 +17,17 @@ export default async function ProfilePage() {
     redirect("/auth/login")
   }
 
-  // Get user profile
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+  const { userId } = params
+
+  // Get the profile of the user being viewed
+  const { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).single()
+
+  if (!profile) {
+    redirect("/home")
+  }
+
+  // Check if viewing own profile
+  const isOwnProfile = user.id === userId
 
   // Get user's posts
   const { data: posts } = await supabase
@@ -34,7 +42,7 @@ export default async function ProfilePage() {
       )
     `,
     )
-    .eq("author_id", user.id)
+    .eq("author_id", userId)
     .order("created_at", { ascending: false })
 
   return (
@@ -44,17 +52,19 @@ export default async function ProfilePage() {
       <div className="max-w-7xl mx-auto p-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <ProfileHeader profile={profile} isOwnProfile={true} />
-
-            <CreatePost userId={user.id} userName={profile?.name || "User"} />
+            <ProfileHeader profile={profile} isOwnProfile={isOwnProfile} />
 
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-amber-900">Your Posts</h2>
+              <h2 className="text-2xl font-bold text-amber-900">
+                {isOwnProfile ? "Your Posts" : `${profile.name}'s Posts`}
+              </h2>
               {posts && posts.length > 0 ? (
                 posts.map((post) => <PostCard key={post.id} post={post} currentUserId={user.id} />)
               ) : (
                 <div className="text-center py-12 bg-white rounded-lg border border-amber-200">
-                  <p className="text-amber-700">You haven&apos;t posted anything yet. Share your first moment above!</p>
+                  <p className="text-amber-700">
+                    {isOwnProfile ? "You haven't posted anything yet." : `${profile.name} hasn't posted anything yet.`}
+                  </p>
                 </div>
               )}
             </div>
@@ -62,7 +72,7 @@ export default async function ProfilePage() {
 
           <div className="lg:col-span-1">
             <div className="lg:sticky lg:top-6">
-              <WishlistBox userId={user.id} isOwnProfile={true} />
+              <WishlistBox userId={userId} isOwnProfile={isOwnProfile} />
             </div>
           </div>
         </div>

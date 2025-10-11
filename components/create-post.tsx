@@ -9,12 +9,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { ImagePlus, Send, Video } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
+import { WishlistDialog } from "./wishlist-dialog"
 
 interface CreatePostProps {
   userId: string
+  userName: string
 }
 
-export function CreatePost({ userId }: CreatePostProps) {
+export function CreatePost({ userId, userName }: CreatePostProps) {
   const [content, setContent] = useState("")
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -23,10 +25,7 @@ export function CreatePost({ userId }: CreatePostProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
   // 📌 Add uploadVideo here — above handleSubmit
   async function uploadVideo(file: File) {
@@ -41,9 +40,7 @@ export function CreatePost({ userId }: CreatePostProps) {
       return null
     }
 
-    const { data: publicData } = supabase.storage
-      .from("videos")
-      .getPublicUrl(filePath)
+    const { data: publicData } = supabase.storage.from("videos").getPublicUrl(filePath)
 
     return publicData.publicUrl
   }
@@ -151,6 +148,39 @@ export function CreatePost({ userId }: CreatePostProps) {
     }
   }
 
+  const handleAddWishlistItem = async (item: string, description: string, link: string) => {
+    const supabase = createClient()
+
+    const { error: wishlistError } = await supabase.from("wishlist_items").insert({
+      user_id: userId,
+      item,
+      description: description || null,
+      link: link || null,
+    })
+
+    if (wishlistError) throw wishlistError
+
+    // Create a post announcing the wishlist item
+    let postContent = `${userName} has added something to their Wishlist:\n\n${item}`
+    if (description) {
+      postContent += `\n\n${description}`
+    }
+    if (link) {
+      postContent += `\n\n${link}`
+    }
+
+    const { error: postError } = await supabase.from("posts").insert({
+      author_id: userId,
+      content: postContent,
+      image_url: null,
+      video_url: null,
+    })
+
+    if (postError) throw postError
+
+    router.refresh()
+  }
+
   return (
     <Card className="border-amber-200">
       <CardContent className="pt-6">
@@ -197,8 +227,8 @@ export function CreatePost({ userId }: CreatePostProps) {
             </div>
           )}
 
-          <div className="flex gap-2 justify-between items-center">
-            <div className="flex gap-2">
+          <div className="flex gap-2 justify-between items-center flex-wrap">
+            <div className="flex gap-2 flex-wrap">
               <input
                 type="file"
                 accept="image/*"
@@ -248,6 +278,8 @@ export function CreatePost({ userId }: CreatePostProps) {
                   Add Video
                 </Button>
               </label>
+
+              <WishlistDialog onSubmit={handleAddWishlistItem} />
             </div>
 
             <Button type="submit" disabled={isLoading} className="bg-amber-600 hover:bg-amber-700">

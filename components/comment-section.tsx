@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { MessageCircle, Send, Trash2, Heart } from "lucide-react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 interface Comment {
   id: string
@@ -91,8 +92,8 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
   }
 
   useEffect(() => {
-  fetchComments()
-}, [])
+    fetchComments()
+  }, [])
 
   const fetchAllCommentLikes = async (commentIds: string[]) => {
     const supabase = createClient()
@@ -259,7 +260,9 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
       >
         <MessageCircle className="h-4 w-4 mr-2" />
 
-        {comments.length === 0 ? "| Add Comment" : `${comments.length} ${comments.length === 1 ? "| View Comment" : "| View Comments"}`}
+        {comments.length === 0
+          ? "| Add Comment"
+          : `${comments.length} ${comments.length === 1 ? "| View Comment" : "| View Comments"}`}
       </Button>
 
       {showComments && (
@@ -286,16 +289,22 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
               return (
                 <div key={comment.id} className="space-y-2">
                   <div className="flex gap-2">
-                    <Avatar className="h-8 w-8 border border-amber-200">
-                      <AvatarImage src={comment.profiles.avatar_url || undefined} alt={comment.profiles.name} />
-                      <AvatarFallback className="text-sm bg-amber-100">
-                        {getAnimalAvatar(comment.profiles.id)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <Link href={`/profile/${comment.profiles.id}`}>
+                      <Avatar className="h-8 w-8 border border-amber-200 cursor-pointer hover:border-amber-400 transition-colors">
+                        <AvatarImage src={comment.profiles.avatar_url || undefined} alt={comment.profiles.name} />
+                        <AvatarFallback className="text-sm bg-amber-100">
+                          {getAnimalAvatar(comment.profiles.id)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
                     <div className="flex-1 bg-amber-50 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold text-sm text-amber-900">{comment.profiles.name}</p>
+                          <Link href={`/profile/${comment.profiles.id}`}>
+                            <p className="font-semibold text-sm text-amber-900 hover:text-amber-700 cursor-pointer transition-colors">
+                              {comment.profiles.name}
+                            </p>
+                          </Link>
                           <p className="text-xs text-amber-600">{formatDate(comment.created_at)}</p>
                         </div>
                         {comment.author_id === currentUserId && (
@@ -373,16 +382,22 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
                     const replyLikes = commentLikes[reply.id] || { count: 0, isLiked: false }
                     return (
                       <div key={reply.id} className="ml-10 flex gap-2">
-                        <Avatar className="h-7 w-7 border border-amber-200">
-                          <AvatarImage src={reply.profiles.avatar_url || undefined} alt={reply.profiles.name} />
-                          <AvatarFallback className="text-xs bg-amber-100">
-                            {getAnimalAvatar(reply.profiles.id)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <Link href={`/profile/${reply.profiles.id}`}>
+                          <Avatar className="h-7 w-7 border border-amber-200 cursor-pointer hover:border-amber-400 transition-colors">
+                            <AvatarImage src={reply.profiles.avatar_url || undefined} alt={reply.profiles.name} />
+                            <AvatarFallback className="text-xs bg-amber-100">
+                              {getAnimalAvatar(reply.profiles.id)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </Link>
                         <div className="flex-1 bg-amber-50 rounded-lg p-2">
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
-                              <p className="font-semibold text-xs text-amber-900">{reply.profiles.name}</p>
+                              <Link href={`/profile/${reply.profiles.id}`}>
+                                <p className="font-semibold text-xs text-amber-900 hover:text-amber-700 cursor-pointer transition-colors">
+                                  {reply.profiles.name}
+                                </p>
+                              </Link>
                               <p className="text-xs text-amber-600">{formatDate(reply.created_at)}</p>
                             </div>
                             {reply.author_id === currentUserId && (
