@@ -5,15 +5,14 @@ export default function LandingPage() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 p-6">
       <div className="max-w-2xl text-center space-y-8">
-        <h1 className="text-6xl font-bold text-amber-900 text-balance">Welcome to Grandmob</h1>
+        <h1 className="text-6xl font-bold text-amber-900 text-balance">Grandmob The App</h1>
         <p className="text-xl text-amber-800 text-pretty leading-relaxed">
-          Your private family social network. Share moments, stories, and stay connected with the people who matter
-          most.
+          Ain't nothin' but a family thing. Doug and Michele went on a date, see?
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Link href="/auth/signup">
             <Button size="lg" className="bg-amber-600 hover:bg-amber-700 text-lg px-8">
-              Get Started
+              Sign Up
             </Button>
           </Link>
           <Link href="/auth/login">
