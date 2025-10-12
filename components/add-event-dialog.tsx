@@ -38,7 +38,7 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
   const [eventName, setEventName] = useState("")
   const [selectedMonth, setSelectedMonth] = useState("")
   const [selectedDay, setSelectedDay] = useState("")
-  const [selectedYear, setSelectedYear] = useState("")
+  const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()))
   const [selectedHour, setSelectedHour] = useState("")
   const [selectedMinute, setSelectedMinute] = useState("")
   const [selectedAmPm, setSelectedAmPm] = useState("AM")
