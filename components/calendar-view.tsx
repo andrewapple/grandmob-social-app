@@ -15,6 +15,7 @@ interface CalendarEvent {
   event_name: string
   event_date: string
   event_time: string | null
+  end_time: string | null
   profiles: {
     name: string
   }
@@ -97,6 +98,14 @@ export function CalendarView({ userId }: CalendarViewProps) {
     const ampm = hour >= 12 ? "PM" : "AM"
     const displayHour = hour % 12 || 12
     return `${displayHour}:${minutes} ${ampm}`
+  }
+
+  const formatTimeRange = (startTime: string | null, endTime: string | null) => {
+    if (!startTime) return null
+    const formattedStart = formatTime(startTime)
+    if (!endTime) return formattedStart
+    const formattedEnd = formatTime(endTime)
+    return `${formattedStart} - ${formattedEnd}`
   }
 
   const daysInMonth = getDaysInMonth(selectedMonth, selectedYear)
@@ -222,7 +231,9 @@ export function CalendarView({ userId }: CalendarViewProps) {
                               <div className="text-sm">
                                 <p className="font-semibold">{event.event_name}</p>
                                 <p className="text-xs text-gray-500">By: {event.profiles.name}</p>
-                                {event.event_time && <p className="text-xs">{formatTime(event.event_time)}</p>}
+                                {event.event_time && (
+                                  <p className="text-xs">{formatTimeRange(event.event_time, event.end_time)}</p>
+                                )}
                               </div>
                             </TooltipContent>
                           </Tooltip>

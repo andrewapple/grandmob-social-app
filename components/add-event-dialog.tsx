@@ -43,6 +43,10 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
   const [selectedMinute, setSelectedMinute] = useState("")
   const [selectedAmPm, setSelectedAmPm] = useState("AM")
   const [includeTime, setIncludeTime] = useState(false)
+  const [includeEndTime, setIncludeEndTime] = useState(false)
+  const [endHour, setEndHour] = useState("")
+  const [endMinute, setEndMinute] = useState("")
+  const [endAmPm, setEndAmPm] = useState("AM")
   const [addToFeed, setAddToFeed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -76,11 +80,20 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
         timeStr = `${String(hour).padStart(2, "0")}:${selectedMinute}:00`
       }
 
+      let endTimeStr = null
+      if (includeEndTime && endHour && endMinute) {
+        let hour = Number.parseInt(endHour)
+        if (endAmPm === "PM" && hour !== 12) hour += 12
+        if (endAmPm === "AM" && hour === 12) hour = 0
+        endTimeStr = `${String(hour).padStart(2, "0")}:${endMinute}:00`
+      }
+
       const { error } = await supabase.from("calendar_events").insert({
         user_id: userId,
         event_name: eventName.trim(),
         event_date: dateStr,
         event_time: timeStr,
+        end_time: endTimeStr,
       })
 
       if (error) throw error
@@ -94,6 +107,14 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
           const ampm = hour >= 12 ? "PM" : "AM"
           const displayHour = hour % 12 || 12
           formattedTime = ` ${displayHour}:${minutes} ${ampm}`
+
+          if (endTimeStr) {
+            const [endHours, endMinutes] = endTimeStr.split(":")
+            const endHourNum = Number.parseInt(endHours)
+            const endAmpm = endHourNum >= 12 ? "PM" : "AM"
+            const endDisplayHour = endHourNum % 12 || 12
+            formattedTime += ` - ${endDisplayHour}:${endMinutes} ${endAmpm}`
+          }
         }
 
         const postContent = `Event Added: ${eventName.trim()} - ${formattedDate}${formattedTime}`
@@ -118,6 +139,10 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
       setSelectedMinute("")
       setSelectedAmPm("AM")
       setIncludeTime(false)
+      setIncludeEndTime(false)
+      setEndHour("")
+      setEndMinute("")
+      setEndAmPm("AM")
       setAddToFeed(false)
       setOpen(false)
       onEventAdded()
@@ -210,7 +235,12 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
                 type="checkbox"
                 id="include-time"
                 checked={includeTime}
-                onChange={(e) => setIncludeTime(e.target.checked)}
+                onChange={(e) => {
+                  setIncludeTime(e.target.checked)
+                  if (!e.target.checked) {
+                    setIncludeEndTime(false)
+                  }
+                }}
                 className="rounded border-amber-300"
               />
               <Label htmlFor="include-time" className="text-amber-900 cursor-pointer">
@@ -219,43 +249,98 @@ export function AddEventDialog({ userId, onEventAdded }: AddEventDialogProps) {
             </div>
 
             {includeTime && (
-              <div className="grid grid-cols-3 gap-2">
-                <Select value={selectedHour} onValueChange={setSelectedHour}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Hour" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
-                      <SelectItem key={hour} value={String(hour)}>
-                        {hour}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <>
+                <div className="grid grid-cols-3 gap-2">
+                  <Select value={selectedHour} onValueChange={setSelectedHour}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Hour" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
+                        <SelectItem key={hour} value={String(hour)}>
+                          {hour}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                <Select value={selectedMinute} onValueChange={setSelectedMinute}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Min" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["00", "15", "30", "45"].map((minute) => (
-                      <SelectItem key={minute} value={minute}>
-                        {minute}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Select value={selectedMinute} onValueChange={setSelectedMinute}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Min" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["00", "15", "30", "45"].map((minute) => (
+                        <SelectItem key={minute} value={minute}>
+                          {minute}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                <Select value={selectedAmPm} onValueChange={setSelectedAmPm}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AM">AM</SelectItem>
-                    <SelectItem value="PM">PM</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <Select value={selectedAmPm} onValueChange={setSelectedAmPm}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AM">AM</SelectItem>
+                      <SelectItem value="PM">PM</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="checkbox"
+                    id="include-end-time"
+                    checked={includeEndTime}
+                    onChange={(e) => setIncludeEndTime(e.target.checked)}
+                    className="rounded border-amber-300"
+                  />
+                  <Label htmlFor="include-end-time" className="text-amber-900 cursor-pointer">
+                    Include end time (optional)
+                  </Label>
+                </div>
+
+                {includeEndTime && (
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    <Select value={endHour} onValueChange={setEndHour}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Hour" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
+                          <SelectItem key={hour} value={String(hour)}>
+                            {hour}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={endMinute} onValueChange={setEndMinute}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Min" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["00", "15", "30", "45"].map((minute) => (
+                          <SelectItem key={minute} value={minute}>
+                            {minute}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={endAmPm} onValueChange={setEndAmPm}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AM">AM</SelectItem>
+                        <SelectItem value="PM">PM</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
