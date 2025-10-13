@@ -6,13 +6,12 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
-  // These are available in the Edge runtime, while NEXT_PUBLIC_ vars may not be
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  // If environment variables are not available, return early without authentication
+  // This allows the app to work even if middleware can't access env vars
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("[v0] Supabase environment variables not found in middleware")
+    console.warn("[v0] Supabase environment variables not available in middleware - skipping auth refresh")
     return supabaseResponse
   }
 
