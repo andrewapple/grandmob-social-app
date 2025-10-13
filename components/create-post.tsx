@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,8 +9,7 @@ import { ImagePlus, Send, Video } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { WishlistDialog } from "./wishlist-dialog"
-import { extractUsernames } from "@/lib/textHelpers";
-
+import { extractUsernames } from "@/lib/textHelpers"
 
 interface CreatePostProps {
   userId: string
@@ -25,60 +23,78 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
 
+  const [tagQuery, setTagQuery] = useState("")
+  const [tagResults, setTagResults] = useState<{ username: string }[]>([])
+
+  const router = useRouter()
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
+  // Live search for taggable users
   const searchUsers = async (query: string) => {
-  const { data } = await supabase
-    .from("profiles")
-    .select("username")
-    .ilike("username", `${query}%`)
-    .limit(5);
-  return data;
-};
+    if (!query) return []
+    const { data } = await supabase
+      .from("profiles")
+      .select("username")
+      .ilike("username", `${query}%`)
+      .limit(5)
+    return data
+  }
 
+  const handleTagInputChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    setContent(value)
 
-  // 📹 Upload video to Supabase Storage
-  async function uploadVideo(file: File) {
+    const match = value.match(/@(\w*)$/)
+    if (match) {
+      const query = match[1]
+      if (query.length > 0) {
+        const results = await searchUsers(query)
+        setTagResults(results || [])
+      } else {
+        setTagResults([])
+      }
+    } else {
+      setTagResults([])
+    }
+  }
+
+  // Upload video helper
+  const uploadVideo = async (file: File) => {
     const filePath = `videos/${Date.now()}-${file.name}`
-
     const { data, error } = await supabase.storage.from("videos").upload(filePath, file)
     if (error) {
       console.error("Upload error:", error)
       return null
     }
-
     const { data: publicData } = supabase.storage.from("videos").getPublicUrl(filePath)
     return publicData.publicUrl
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      setImageFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => setImagePreview(reader.result as string)
-      reader.readAsDataURL(file)
-    }
+    if (!file) return
+    setImageFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => setImagePreview(reader.result as string)
+    reader.readAsDataURL(file)
   }
 
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const maxSize = 100 * 1024 * 1024 // 100MB
-      if (file.size > maxSize) {
-        alert("Video file size must be less than 100MB")
-        return
-      }
-      setVideoFile(file)
-      const reader = new FileReader()
-      reader.onloadend = () => setVideoPreview(reader.result as string)
-      reader.readAsDataURL(file)
+    if (!file) return
+    const maxSize = 100 * 1024 * 1024
+    if (file.size > maxSize) {
+      alert("Video file size must be less than 100MB")
+      return
     }
+    setVideoFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => setVideoPreview(reader.result as string)
+    reader.readAsDataURL(file)
   }
 
   const handleRemoveImage = () => {
@@ -91,7 +107,6 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
     setVideoPreview(null)
   }
 
-  // 🧩 Step 3–5: Tagging logic integrated into handleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -106,31 +121,29 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
       let imageUrl: string | null = null
       let videoUrl: string | null = null
 
-      // Upload image via your /api/upload route
+      // Upload image
       if (imageFile) {
         const formData = new FormData()
         formData.append("file", imageFile)
         const response = await fetch("/api/upload", { method: "POST", body: formData })
-
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
           throw new Error(errorData.error || "Failed to upload image")
         }
-
         const data = await response.json()
         imageUrl = data.url
       }
 
-      // Upload video to Supabase storage
+      // Upload video
       if (videoFile) {
         videoUrl = await uploadVideo(videoFile)
         if (!videoUrl) throw new Error("Failed to upload video")
       }
 
-      // 👉 Extract tagged usernames
+      // Extract tagged usernames
       const taggedUsernames = extractUsernames(content)
 
-      // ✅ Insert post first
+      // Insert post
       const { data: post, error: postError } = await supabase
         .from("posts")
         .insert({
@@ -144,7 +157,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
 
       if (postError) throw postError
 
-      // 🔍 Validate tagged usernames and insert into post_tags
+      // Insert post_tags
       if (taggedUsernames.length > 0) {
         const { data: validUsers, error: userError } = await supabase
           .from("profiles")
@@ -158,18 +171,18 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
             post_id: post.id,
             tagged_user_id: user.id,
           }))
-
           const { error: tagError } = await supabase.from("post_tags").insert(tagInserts)
           if (tagError) throw tagError
         }
       }
 
-      // 🧹 Reset form
+      // Reset form
       setContent("")
       setImageFile(null)
       setImagePreview(null)
       setVideoFile(null)
       setVideoPreview(null)
+      setTagResults([])
       router.refresh()
     } catch (error) {
       console.error("Error creating post:", error)
@@ -179,9 +192,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
     }
   }
 
-  // 💫 Wishlist helper (unchanged)
   const handleAddWishlistItem = async (item: string) => {
-    const supabase = createClient()
     const { error: wishlistError } = await supabase.from("wishlist_items").insert({
       user_id: userId,
       item,
@@ -205,13 +216,32 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
     <Card className="border-amber-200">
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Textarea
-            placeholder="Share something with your family..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={3}
-            className="resize-none"
-          />
+          <div className="relative">
+            <Textarea
+              placeholder="Share something with your family..."
+              value={content}
+              onChange={handleTagInputChange}
+              rows={3}
+              className="resize-none"
+            />
+            {tagResults.length > 0 && (
+              <ul className="absolute z-10 border rounded bg-white max-h-40 overflow-y-auto mt-1 w-full">
+                {tagResults.map((user) => (
+                  <li
+                    key={user.username}
+                    className="p-2 hover:bg-gray-200 cursor-pointer"
+                    onClick={() => {
+                      setContent((prev) => prev.replace(/@(\w*)$/, `@${user.username} `))
+                      setTagQuery("")
+                      setTagResults([])
+                    }}
+                  >
+                    {user.username}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
           {imagePreview && (
             <div className="relative">
@@ -249,14 +279,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
 
           <div className="flex gap-2 justify-between items-center flex-wrap">
             <div className="flex gap-2 flex-wrap">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-                id="image-upload"
-                disabled={isLoading}
-              />
+              <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" id="image-upload" disabled={isLoading} />
               <label htmlFor="image-upload">
                 <Button
                   type="button"
@@ -274,14 +297,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
                 </Button>
               </label>
 
-              <input
-                type="file"
-                accept="video/*"
-                onChange={handleVideoChange}
-                className="hidden"
-                id="video-upload"
-                disabled={isLoading}
-              />
+              <input type="file" accept="video/*" onChange={handleVideoChange} className="hidden" id="video-upload" disabled={isLoading} />
               <label htmlFor="video-upload">
                 <Button
                   type="button"
