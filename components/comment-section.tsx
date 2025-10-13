@@ -40,6 +40,35 @@ export function CommentSection({ postId, currentUserId, usernameToIdMap }: Comme
   const [commentLikes, setCommentLikes] = useState<Record<string, { count: number; isLiked: boolean }>>({})
   const router = useRouter()
 
+    // Live search for taggable users
+  const searchUsers = async (query: string) => {
+    if (!query) return []
+    const { data } = await supabase
+      .from("profiles")
+      .select("username")
+      .ilike("username", `${query}%`)
+      .limit(5)
+    return data
+  }
+
+  const handleTagInputChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    setContent(value)
+
+    const match = value.match(/@(\w*)$/)
+    if (match) {
+      const query = match[1]
+      if (query.length > 0) {
+        const results = await searchUsers(query)
+        setTagResults(results || [])
+      } else {
+        setTagResults([])
+      }
+    } else {
+      setTagResults([])
+    }
+  }
+  
   const getAnimalAvatar = (id: string) => {
     const animals = ["🦁", "🐼", "🦊", "🐨", "🐸", "🦉", "🐷", "🐮", "🐵", "🐶"]
     const index = Number.parseInt(id.slice(0, 8), 16) % animals.length
@@ -56,6 +85,7 @@ export function CommentSection({ postId, currentUserId, usernameToIdMap }: Comme
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
   }
+  
 
   useEffect(() => {
     if (showComments) {
