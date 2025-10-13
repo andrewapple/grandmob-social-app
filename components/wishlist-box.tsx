@@ -49,15 +49,24 @@ export function WishlistBox({ userId, isOwnProfile }: WishlistBoxProps) {
     if (!confirm("Are you sure you want to remove this item from your wishlist?")) return
 
     const supabase = createClient()
+
+    const { data: wishlistItem } = await supabase.from("wishlist_items").select("item").eq("id", itemId).single()
+
     const { error } = await supabase.from("wishlist_items").delete().eq("id", itemId)
 
     if (error) {
       console.error("Error deleting wishlist item:", error)
       alert("Failed to delete item")
-    } else {
-      setItems(items.filter((item) => item.id !== itemId))
-      router.refresh()
+      return
     }
+
+    if (wishlistItem) {
+      const postContent = `I added something to my Wishlist:\n\n${wishlistItem.item}`
+      await supabase.from("posts").delete().eq("author_id", userId).eq("content", postContent)
+    }
+
+    setItems(items.filter((item) => item.id !== itemId))
+    router.refresh()
   }
 
   if (isLoading) {

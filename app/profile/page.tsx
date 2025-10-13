@@ -30,12 +30,22 @@ export default async function ProfilePage() {
       profiles:author_id (
         id,
         name,
+        username,
         avatar_url
       )
     `,
     )
     .eq("author_id", user.id)
     .order("created_at", { ascending: false })
+
+  const usernameToIdMap: Record<string, string> = {}
+  if (posts) {
+    for (const post of posts) {
+      if (post.profiles?.username) {
+        usernameToIdMap[post.profiles.username] = post.profiles.id
+      }
+    }
+  }
 
   return (
     <div className="min-h-svh bg-gradient-to-br from-amber-50 to-orange-50">
@@ -51,7 +61,9 @@ export default async function ProfilePage() {
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-amber-900">Your Posts</h2>
               {posts && posts.length > 0 ? (
-                posts.map((post) => <PostCard key={post.id} post={post} currentUserId={user.id} usernameToIdMap={{}} />)
+                posts.map((post) => (
+                  <PostCard key={post.id} post={post} currentUserId={user.id} usernameToIdMap={usernameToIdMap} />
+                ))
               ) : (
                 <div className="text-center py-12 bg-white rounded-lg border border-amber-200">
                   <p className="text-amber-700">You haven&apos;t posted anything yet. Share your first moment above!</p>

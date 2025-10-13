@@ -172,34 +172,37 @@ export function PostCard({ post, currentUserId, usernameToIdMap }: PostCardProps
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-       {post.content && (
-  <p className="text-amber-900 leading-relaxed whitespace-pre-wrap">
-    {post.content.split(/(@\w+)/g).map((part, idx) => {
-      if (part.startsWith("@")) {
-        const username = part.slice(1)
-        const userId = usernameToIdMap[username]
+        {post.content && (
+          <p className="text-amber-900 leading-relaxed whitespace-pre-wrap">
+            {post.content.split(/(@\w+)/g).map((part, idx) => {
+              if (part.startsWith("@")) {
+                const username = part.slice(1)
+                const userId = usernameToIdMap[username]
 
-        if (userId) {
-          return (
-            <Link
-              key={idx}
-              href={`/profile/${userId}`}
-              className="text-blue-600 hover:underline"
-            >
-              {part}
-            </Link>
-          )
-        } else {
-          // Username not found in the map, render as plain gray text
-          return <span key={idx} className="text-gray-500">{part}</span>
-        }
-      }
+                if (userId) {
+                  return (
+                    <Link
+                      key={idx}
+                      href={`/profile/${userId}`}
+                      className="text-blue-600 hover:underline cursor-pointer"
+                    >
+                      {part}
+                    </Link>
+                  )
+                } else {
+                  // Username not found in the map, render as plain gray text
+                  return (
+                    <span key={idx} className="text-gray-500">
+                      {part}
+                    </span>
+                  )
+                }
+              }
 
-      return <span key={idx}>{part}</span>
-    })}
-  </p>
-)}
-
+              return <span key={idx}>{part}</span>
+            })}
+          </p>
+        )}
 
         {post.image_url && (
           <img
@@ -223,7 +226,7 @@ export function PostCard({ post, currentUserId, usernameToIdMap }: PostCardProps
             {likesCount} {likesCount === 1 ? "Like" : "Likes"}
           </Button>
 
-          <CommentSection postId={post.id} currentUserId={currentUserId} />
+          <CommentSection postId={post.id} currentUserId={currentUserId} usernameToIdMap={usernameToIdMap} />
         </div>
       </CardContent>
     </Card>

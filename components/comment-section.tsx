@@ -27,9 +27,10 @@ interface Comment {
 interface CommentSectionProps {
   postId: string
   currentUserId: string
+  usernameToIdMap: Record<string, string>
 }
 
-export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
+export function CommentSection({ postId, currentUserId, usernameToIdMap }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState("")
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
@@ -250,6 +251,30 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
   const topLevelComments = comments.filter((c) => !c.parent_comment_id)
   const getReplies = (commentId: string) => comments.filter((c) => c.parent_comment_id === commentId)
 
+  const renderContentWithMentions = (content: string) => {
+    return content.split(/(@\w+)/g).map((part, idx) => {
+      if (part.startsWith("@")) {
+        const username = part.slice(1)
+        const userId = usernameToIdMap[username]
+
+        if (userId) {
+          return (
+            <Link key={idx} href={`/profile/${userId}`} className="text-blue-600 hover:underline cursor-pointer">
+              {part}
+            </Link>
+          )
+        } else {
+          return (
+            <span key={idx} className="text-gray-500">
+              {part}
+            </span>
+          )
+        }
+      }
+      return <span key={idx}>{part}</span>
+    })
+  }
+
   return (
     <div className="space-y-3">
       <Button
@@ -273,7 +298,7 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               rows={2}
-              className="resize-none"
+              className="resize-none w-full"
             />
             <div className="flex justify-end">
               <Button type="submit" size="sm" disabled={isLoading} className="bg-amber-600 hover:bg-amber-700">
@@ -312,13 +337,15 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
                             size="sm"
                             variant="ghost"
                             onClick={() => handleDeleteComment(comment.id)}
-                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         )}
                       </div>
-                      <p className="text-sm text-amber-900 whitespace-pre-wrap">{comment.content}</p>
+                      <p className="text-sm text-amber-900 whitespace-pre-wrap">
+                        {renderContentWithMentions(comment.content)}
+                      </p>
                       <div className="flex items-center gap-2 mt-1">
                         <Button
                           variant="ghost"
@@ -405,13 +432,15 @@ export function CommentSection({ postId, currentUserId }: CommentSectionProps) {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleDeleteComment(reply.id)}
-                                className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="h-5 w-5 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             )}
                           </div>
-                          <p className="text-xs text-amber-900 whitespace-pre-wrap">{reply.content}</p>
+                          <p className="text-xs text-amber-900 whitespace-pre-wrap">
+                            {renderContentWithMentions(reply.content)}
+                          </p>
                           <Button
                             variant="ghost"
                             size="sm"
