@@ -6,6 +6,7 @@ import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Pencil, Check, X, Camera } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -17,6 +18,7 @@ interface Profile {
   name: string
   bio: string | null
   avatar_url: string | null
+  username?: string
 }
 
 interface ProfileHeaderProps {
@@ -26,7 +28,9 @@ interface ProfileHeaderProps {
 
 export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
   const [isEditingBio, setIsEditingBio] = useState(false)
+  const [isEditingName, setIsEditingName] = useState(false)
   const [bio, setBio] = useState(profile?.bio || "")
+  const [name, setName] = useState(profile?.name || "")
   const [isLoading, setIsLoading] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [cropDialogOpen, setCropDialogOpen] = useState(false)
@@ -56,9 +60,40 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
     }
   }
 
+  const handleSaveName = async () => {
+    if (!profile) return
+
+    if (!name.trim()) {
+      alert("Name cannot be empty")
+      return
+    }
+
+    setIsLoading(true)
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase.from("profiles").update({ name: name.trim() }).eq("id", profile.id)
+
+      if (error) throw error
+
+      setIsEditingName(false)
+      router.refresh()
+    } catch (error) {
+      console.error("Error updating name:", error)
+      alert("Failed to update name")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleCancelEdit = () => {
     setBio(profile?.bio || "")
     setIsEditingBio(false)
+  }
+
+  const handleCancelNameEdit = () => {
+    setName(profile?.name || "")
+    setIsEditingName(false)
   }
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,7 +191,48 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
             </div>
 
             <div className="space-y-2 w-full">
-              <h1 className="text-3xl font-bold text-amber-900">{profile.name}</h1>
+              {isOwnProfile && isEditingName ? (
+                <div className="space-y-2">
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name"
+                    className="text-center text-2xl font-bold"
+                  />
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      size="sm"
+                      onClick={handleSaveName}
+                      disabled={isLoading}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Save
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCancelNameEdit} disabled={isLoading}>
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-center gap-2">
+                    <h1 className="text-3xl font-bold text-amber-900">{profile.name}</h1>
+                    {isOwnProfile && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setIsEditingName(true)}
+                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  {profile.username && <p className="text-sm text-amber-600">@{profile.username}</p>}
+                </div>
+              )}
 
               {isOwnProfile && (
                 <div className="space-y-2">
@@ -204,8 +280,8 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
                 </div>
               )}
 
-              {!isOwnProfile && profile.bio && (
-                <p className="text-amber-700 text-pretty leading-relaxed">{profile.bio}</p>
+              {!isOwnProfile && (
+                <>{profile.bio && <p className="text-amber-700 text-pretty leading-relaxed">{profile.bio}</p>}</>
               )}
             </div>
           </div>

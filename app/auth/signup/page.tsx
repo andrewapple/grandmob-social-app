@@ -14,6 +14,7 @@ import { Eye, EyeOff } from "lucide-react"
 
 export default function SignUpPage() {
   const [name, setName] = useState("")
+  const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -41,6 +42,19 @@ export default function SignUpPage() {
       return
     }
 
+    if (!username.trim()) {
+      setError("Username is required")
+      setIsLoading(false)
+      return
+    }
+
+    // Validate username format (alphanumeric and underscores only)
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      setError("Username can only contain letters, numbers, and underscores")
+      setIsLoading(false)
+      return
+    }
+
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -49,6 +63,7 @@ export default function SignUpPage() {
           emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/home`,
           data: {
             name: name.trim(),
+            username: username.trim().toLowerCase(),
           },
         },
       })
@@ -82,6 +97,18 @@ export default function SignUpPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                   />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="username"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                  />
+                  <p className="text-xs text-amber-600">Letters, numbers, and underscores only</p>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
