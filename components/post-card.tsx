@@ -214,17 +214,19 @@ export function PostCard({ post, currentUserId, usernameToIdMap }: PostCardProps
 
         {post.video_url && <video src={post.video_url} controls className="rounded-lg w-full max-h-96" />}
 
-        <div className="flex items-center gap-4 pt-2 border-t border-amber-200 flex-wrap">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLike}
-            disabled={isLiking}
-            className={`${isLiked ? "text-red-600 hover:text-red-700" : "text-amber-700 hover:text-amber-900"} hover:bg-amber-50`}
-          >
-            <Heart className={`${isLiked ? "fill-current" : ""} h-4 w-4 mr-2`} />
-            {likesCount} {likesCount === 1 ? "Like" : "Likes"}
-          </Button>
+        <div className="pt-2 border-t border-amber-200 space-y-3">
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLike}
+              disabled={isLiking}
+              className={`${isLiked ? "text-red-600 hover:text-red-700" : "text-amber-700 hover:text-amber-900"} hover:bg-amber-50`}
+            >
+              <Heart className={`${isLiked ? "fill-current" : ""} h-4 w-4 mr-2`} />
+              {likesCount} {likesCount === 1 ? "Like" : "Likes"}
+            </Button>
+          </div>
 
           <CommentSection postId={post.id} currentUserId={currentUserId} usernameToIdMap={usernameToIdMap} />
         </div>
