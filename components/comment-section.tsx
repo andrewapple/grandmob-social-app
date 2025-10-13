@@ -163,38 +163,60 @@ export function CommentSection({ postId, currentUserId, usernameToIdMap }: Comme
   }
 
   const handleAddComment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newComment.trim()) return
+  e.preventDefault()
+  if (!newComment.trim()) return
 
-    setIsLoading(true)
-    const supabase = createClient()
+  setIsLoading(true)
+  const supabase = createClient()
 
-    try {
-      const { data, error } = await supabase
-        .from("comments")
-        .insert({
-          post_id: postId,
-          author_id: currentUserId,
-          content: newComment.trim(),
-          parent_comment_id: null,
-        })
-        .select()
+  try {
+    // 1️⃣ Insert the comment
+    const { data: insertedComments, error } = await supabase
+      .from("comments")
+      .insert({
+        post_id: postId,
+        author_id: currentUserId,
+        content: newComment.trim(),
+        parent_comment_id: null,
+      })
+      .select()
 
-      if (error) {
-        console.error("Error inserting comment:", error)
-        throw error
+    if (error) throw error
+
+    const insertedComment = insertedComments?.[0]
+
+    // 2️⃣ Extract tagged usernames
+    const taggedUsernames = newComment.match(/@(\w+)/g)?.map((u) => u.slice(1)) || []
+
+    if (taggedUsernames.length > 0 && insertedComment) {
+      // 3️⃣ Match to user IDs using the provided map
+      const taggedUsers = taggedUsernames
+        .map((username) => usernameToIdMap?.[username])
+        .filter(Boolean)
+
+      // 4️⃣ Insert into comment_tags
+      if (taggedUsers.length > 0) {
+        const tagRecords = taggedUsers.map((userId) => ({
+          comment_id: insertedComment.id,
+          tagged_user_id: userId,
+        }))
+
+        const { error: tagError } = await supabase.from("comment_tags").insert(tagRecords)
+        if (tagError) console.error("Error inserting comment tags:", tagError)
       }
-
-      setNewComment("")
-      await fetchComments()
-      router.refresh()
-    } catch (error) {
-      console.error("Error adding comment:", error)
-      alert("Failed to add comment. Please try again.")
-    } finally {
-      setIsLoading(false)
     }
+
+    setNewComment("")
+    await fetchComments()
+    router.refresh()
+  } catch (error) {
+    console.error("Error adding comment:", error)
+    alert("Failed to add comment. Please try again.")
+  } finally {
+    setIsLoading(false)
   }
+}
+
 
   const handleAddReply = async (parentId: string) => {
     if (!replyContent.trim()) return
