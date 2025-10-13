@@ -160,7 +160,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
 
     if (wishlistError) throw wishlistError
 
-    const postContent = `I added something to my Wishlist:\n\n${item}`
+    const postContent = `${userName} has added something to their Wishlist:\n\n${item}`
 
     const { error: postError } = await supabase.from("posts").insert({
       author_id: userId,
