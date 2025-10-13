@@ -172,7 +172,29 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {post.content && <p className="text-amber-900 leading-relaxed whitespace-pre-wrap">{post.content}</p>}
+        {post.content && (
+  <p className="text-amber-900 leading-relaxed whitespace-pre-wrap">
+    {post.content.split(/(@\w+)/g).map((part, idx) => {
+      if (part.startsWith("@")) {
+        const username = part.slice(1)
+        const userId = usernameToIdMap[username]
+        if (userId) {
+          return (
+            <Link
+              key={idx}
+              href={`/profile/${userId}`}
+              className="text-blue-600 hover:underline"
+            >
+              {part}
+            </Link>
+          )
+        }
+      }
+      return <span key={idx}>{part}</span>
+    })}
+  </p>
+)}
+
         {post.image_url && (
           <img
             src={post.image_url || "/placeholder.svg"}
