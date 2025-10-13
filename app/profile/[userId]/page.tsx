@@ -46,6 +46,14 @@ export default async function UserProfilePage({ params }: { params: { userId: st
     .eq("author_id", userId)
     .order("created_at", { ascending: false })
 
+  const usernameToIdMap: Record<string, string> = {}
+
+posts?.forEach((post) => {
+  if (post.profiles?.username) {
+    usernameToIdMap[post.profiles.username] = post.profiles.id
+  }
+})
+
   return (
     <div className="min-h-svh bg-gradient-to-br from-amber-50 to-orange-50">
       <NavBar />
@@ -60,7 +68,7 @@ export default async function UserProfilePage({ params }: { params: { userId: st
                 {isOwnProfile ? "Your Posts" : `${profile.name}'s Posts`}
               </h2>
               {posts && posts.length > 0 ? (
-                posts.map((post) => <PostCard key={post.id} post={post} currentUserId={user.id} />)
+                posts.map((post) => <PostCard key={post.id} post={post} currentUserId={user.id} usernameToIdMap={usernameToIdMap} />)
               ) : (
                 <div className="text-center py-12 bg-white rounded-lg border border-amber-200">
                   <p className="text-amber-700">
