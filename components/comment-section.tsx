@@ -348,7 +348,11 @@ export function CommentSection({ postId, currentUserId, usernameToIdMap }: Comme
             <Textarea
               placeholder="Write a comment..."
               value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
+              onChange={(e) => {
+  setNewComment(e.target.value)
+  handleTagInputChange(e)
+}}
+
               rows={2}
               className="resize-none w-full"
             />
