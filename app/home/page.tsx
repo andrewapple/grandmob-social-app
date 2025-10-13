@@ -45,7 +45,7 @@ export default async function HomePage() {
 
         <div className="space-y-4">
           {posts && posts.length > 0 ? (
-            posts.map((post) => <PostCard key={post.id} post={post} currentUserId={user.id} />)
+            posts.map((post) => <PostCard key={post.id} post={post} currentUserId={user.id} usernameToIdMap={{}} />)
           ) : (
             <div className="text-center py-12 bg-white rounded-lg border border-amber-200">
               <p className="text-amber-700">No posts yet. Be the first to share something!</p>
