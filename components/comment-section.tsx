@@ -42,6 +42,11 @@ export function CommentSection({ postId, currentUserId, usernameToIdMap }: Comme
 
   const [tagResults, setTagResults] = useState<{ username: string }[]>([])
 
+   const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
     // Live search for taggable users
   const searchUsers = async (query: string) => {
     if (!query) return []
