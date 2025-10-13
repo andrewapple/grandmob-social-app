@@ -10,6 +10,8 @@ import { ImagePlus, Send, Video } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { WishlistDialog } from "./wishlist-dialog"
+import { extractUsernames } from "@/lib/textHelpers";
+
 
 interface CreatePostProps {
   userId: string
@@ -25,23 +27,22 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
-  // 📌 Add uploadVideo here — above handleSubmit
+  // 📹 Upload video to Supabase Storage
   async function uploadVideo(file: File) {
     const filePath = `videos/${Date.now()}-${file.name}`
 
-    const { data, error } = await supabase.storage
-      .from("videos") // your bucket name
-      .upload(filePath, file)
-
+    const { data, error } = await supabase.storage.from("videos").upload(filePath, file)
     if (error) {
       console.error("Upload error:", error)
       return null
     }
 
     const { data: publicData } = supabase.storage.from("videos").getPublicUrl(filePath)
-
     return publicData.publicUrl
   }
 
@@ -50,9 +51,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
     if (file) {
       setImageFile(file)
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
-      }
+      reader.onloadend = () => setImagePreview(reader.result as string)
       reader.readAsDataURL(file)
     }
   }
@@ -65,12 +64,9 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
         alert("Video file size must be less than 100MB")
         return
       }
-
       setVideoFile(file)
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setVideoPreview(reader.result as string)
-      }
+      reader.onloadend = () => setVideoPreview(reader.result as string)
       reader.readAsDataURL(file)
     }
   }
@@ -85,6 +81,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
     setVideoPreview(null)
   }
 
+  // 🧩 Step 3–5: Tagging logic integrated into handleSubmit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -99,14 +96,11 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
       let imageUrl: string | null = null
       let videoUrl: string | null = null
 
+      // Upload image via your /api/upload route
       if (imageFile) {
         const formData = new FormData()
         formData.append("file", imageFile)
-
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        })
+        const response = await fetch("/api/upload", { method: "POST", body: formData })
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
@@ -117,23 +111,50 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
         imageUrl = data.url
       }
 
+      // Upload video to Supabase storage
       if (videoFile) {
-        // 🔄 Replace old video upload with direct Supabase upload
         videoUrl = await uploadVideo(videoFile)
-        if (!videoUrl) {
-          throw new Error("Failed to upload video")
+        if (!videoUrl) throw new Error("Failed to upload video")
+      }
+
+      // 👉 Extract tagged usernames
+      const taggedUsernames = extractUsernames(content)
+
+      // ✅ Insert post first
+      const { data: post, error: postError } = await supabase
+        .from("posts")
+        .insert({
+          author_id: userId,
+          content: content.trim() || null,
+          image_url: imageUrl,
+          video_url: videoUrl,
+        })
+        .select()
+        .single()
+
+      if (postError) throw postError
+
+      // 🔍 Validate tagged usernames and insert into post_tags
+      if (taggedUsernames.length > 0) {
+        const { data: validUsers, error: userError } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("username", taggedUsernames)
+
+        if (userError) throw userError
+
+        if (validUsers && validUsers.length > 0) {
+          const tagInserts = validUsers.map((user) => ({
+            post_id: post.id,
+            tagged_user_id: user.id,
+          }))
+
+          const { error: tagError } = await supabase.from("post_tags").insert(tagInserts)
+          if (tagError) throw tagError
         }
       }
 
-      const { error } = await supabase.from("posts").insert({
-        author_id: userId,
-        content: content.trim() || null,
-        image_url: imageUrl,
-        video_url: videoUrl,
-      })
-
-      if (error) throw error
-
+      // 🧹 Reset form
       setContent("")
       setImageFile(null)
       setImagePreview(null)
@@ -148,29 +169,25 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
     }
   }
 
+  // 💫 Wishlist helper (unchanged)
   const handleAddWishlistItem = async (item: string) => {
     const supabase = createClient()
-
     const { error: wishlistError } = await supabase.from("wishlist_items").insert({
       user_id: userId,
       item,
       description: null,
       link: null,
     })
-
     if (wishlistError) throw wishlistError
 
     const postContent = `I added something to my Wishlist:\n\n${item}`
-
     const { error: postError } = await supabase.from("posts").insert({
       author_id: userId,
       content: postContent,
       image_url: null,
       video_url: null,
     })
-
     if (postError) throw postError
-
     router.refresh()
   }
 
