@@ -118,11 +118,16 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
     setIsLoading(true)
 
     try {
+
+      console.log("Starting post submission...")
+    console.log("Content:", content)
+      
       let imageUrl: string | null = null
       let videoUrl: string | null = null
 
       // Upload image
       if (imageFile) {
+    
         const formData = new FormData()
         formData.append("file", imageFile)
         const response = await fetch("/api/upload", { method: "POST", body: formData })
@@ -142,6 +147,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
 
       // Extract tagged usernames
       const taggedUsernames = extractUsernames(content)
+      console.log("🏷 Tagged usernames:", taggedUsernames)
 
       // Insert post
       const { data: post, error: postError } = await supabase
@@ -155,22 +161,27 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
         .select()
         .single()
 
+      console.log("Inserted post:", post)
+      
       if (postError) throw postError
 
       // Insert post_tags
       if (taggedUsernames.length > 0) {
+        console.log("Fetching tagged user profiles from Supabase...")
         const { data: validUsers, error: userError } = await supabase
           .from("profiles")
           .select("id, username")
           .in("username", taggedUsernames)
 
         if (userError) throw userError
+        console.log("Valid tagged users:", validUsers)
 
         if (validUsers && validUsers.length > 0) {
           const tagInserts = validUsers.map((user) => ({
             post_id: post.id,
             tagged_user_id: user.id,
           }))
+          console.log("Inserting post_tags:", tagInserts)
           const { error: tagError } = await supabase.from("post_tags").insert(tagInserts)
           if (tagError) throw tagError
         }
