@@ -40,6 +40,8 @@ export function CommentSection({ postId, currentUserId, usernameToIdMap }: Comme
   const [commentLikes, setCommentLikes] = useState<Record<string, { count: number; isLiked: boolean }>>({})
   const router = useRouter()
 
+  const [tagResults, setTagResults] = useState<{ username: string }[]>([])
+
     // Live search for taggable users
   const searchUsers = async (query: string) => {
     if (!query) return []
