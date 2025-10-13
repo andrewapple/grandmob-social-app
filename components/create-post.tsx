@@ -32,6 +32,16 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
+  const searchUsers = async (query: string) => {
+  const { data } = await supabase
+    .from("profiles")
+    .select("username")
+    .ilike("username", `${query}%`)
+    .limit(5);
+  return data;
+};
+
+
   // 📹 Upload video to Supabase Storage
   async function uploadVideo(file: File) {
     const filePath = `videos/${Date.now()}-${file.name}`
