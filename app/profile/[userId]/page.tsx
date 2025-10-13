@@ -38,7 +38,8 @@ export default async function UserProfilePage({ params }: { params: { userId: st
       profiles:author_id (
         id,
         name,
-        avatar_url
+        avatar_url,
+        username
       )
     `,
     )
