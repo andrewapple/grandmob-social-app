@@ -30,7 +30,7 @@ interface PostCardProps {
   usernameToIdMap: Record<string, string>
 }
 
-export function PostCard({ post, currentUserId }: PostCardProps) {
+export function PostCard({ post, currentUserId, usernameToIdMap }: PostCardProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [likesCount, setLikesCount] = useState(0)
   const [isLiked, setIsLiked] = useState(false)
