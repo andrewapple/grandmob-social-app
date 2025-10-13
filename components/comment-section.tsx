@@ -31,6 +31,7 @@ interface CommentSectionProps {
 }
 
 export function CommentSection({ postId, currentUserId, usernameToIdMap }: CommentSectionProps) {
+  const [content, setContent] = useState("")
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState("")
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
