@@ -364,6 +364,23 @@ export function CommentSection({ postId, currentUserId, usernameToIdMap }: Comme
               rows={2}
               className="resize-none w-full"
             />
+             {tagResults.length > 0 && (
+              <ul className="absolute z-10 border rounded bg-white max-h-40 overflow-y-auto mt-1 w-full">
+                {tagResults.map((user) => (
+                  <li
+                    key={user.username}
+                    className="p-2 hover:bg-gray-200 cursor-pointer"
+                    onClick={() => {
+                      setNewComment((prev) => prev.replace(/@(\w*)$/, `@${user.username} `))
+                      setTagQuery("")
+                      setTagResults([])
+                    }}
+                  >
+                    {user.username}
+                  </li>
+                ))}
+              </ul>
+            )}
             <div className="flex justify-end">
               <Button type="submit" size="sm" disabled={isLoading} className="bg-amber-600 hover:bg-amber-700">
                 <Send className="h-3 w-3 mr-2" />
