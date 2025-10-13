@@ -27,6 +27,7 @@ interface Post {
 interface PostCardProps {
   post: Post
   currentUserId: string
+  usernameToIdMap: Record<string, string>
 }
 
 export function PostCard({ post, currentUserId }: PostCardProps) {
