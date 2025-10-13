@@ -40,6 +40,7 @@ export function CommentSection({ postId, currentUserId, usernameToIdMap }: Comme
   const [commentLikes, setCommentLikes] = useState<Record<string, { count: number; isLiked: boolean }>>({})
   const router = useRouter()
 
+  const [tagQuery, setTagQuery] = useState("")
   const [tagResults, setTagResults] = useState<{ username: string }[]>([])
 
    const supabase = createClient(
