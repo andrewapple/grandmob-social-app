@@ -54,7 +54,7 @@ export function CommentSection({ postId, currentUserId, usernameToIdMap }: Comme
 
   const handleTagInputChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
-    setContent(value)
+    setNewComment(value)
 
     const match = value.match(/@(\w*)$/)
     if (match) {
