@@ -77,7 +77,7 @@ export function WishlistDialog({ onSubmit, trigger }: WishlistDialogProps) {
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading} className="bg-amber-600 hover:bg-amber-700">
-              {isLoading ? "Adding..." : "Add to Wishlist X"}
+              {isLoading ? "Adding..." : "Add to Wishlist"}
             </Button>
           </div>
         </form>
