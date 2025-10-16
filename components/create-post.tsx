@@ -113,7 +113,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!content.trim() && !imageFile && !videoFile && checkWish = false) {
+    if (!content.trim() && !imageFile && !videoFile) {
       alert("Please add some content, an image, or a video")
       return
     }
