@@ -21,7 +21,7 @@ export function WishlistDialog({ onSubmit, trigger }: WishlistDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
+    e.stopPropagation()
     if (!item.trim()) {
       alert("Please enter an item name")
       return
