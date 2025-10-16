@@ -23,7 +23,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [isWishlist, setIsWishlist] = useState(true)
+  
 
 
   const [tagQuery, setTagQuery] = useState("")
@@ -112,12 +112,11 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!isWishlist && !content.trim() && !imageFile && !videoFile) {
+    if (!content.trim() && !imageFile && !videoFile) {
       alert("Please add some content, an image, or a video")
       return
     }
-    setIsWishlist(false)
-    console.log("wishlist: " + isWishlist)
+    
 
     setIsLoading(true)
 
@@ -208,10 +207,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
   }
 
   const handleAddWishlistItem = async (item: string) => {
-    console.log("wishlist: " + isWishlist)
-
-    setIsWishlist(true)
-    console.log("wishlist: " + isWishlist)
+   
     const { error: wishlistError } = await supabase.from("wishlist_items").insert({
       user_id: userId,
       item,
