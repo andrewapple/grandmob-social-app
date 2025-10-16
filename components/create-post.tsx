@@ -24,7 +24,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
   const [videoPreview, setVideoPreview] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  const checkWish = false
+
 
 
   const [tagQuery, setTagQuery] = useState("")
@@ -118,7 +118,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
       return
     }
     
-    checkWish = false
+    
     setIsLoading(true)
 
     try {
@@ -209,7 +209,7 @@ export function CreatePost({ userId, userName }: CreatePostProps) {
 
   const handleAddWishlistItem = async (item: string) => {
 
-    checkWish = true
+    
     const { error: wishlistError } = await supabase.from("wishlist_items").insert({
       user_id: userId,
       item,
