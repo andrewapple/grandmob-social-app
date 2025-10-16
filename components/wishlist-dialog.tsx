@@ -51,13 +51,13 @@ export function WishlistDialog({ onSubmit, trigger }: WishlistDialogProps) {
             className="border-amber-300 text-amber-900 hover:bg-amber-50 bg-transparent"
           >
             <Gift className="h-4 w-4 mr-2" />
-            Add To Wishlist
+            Add To WishlistZ
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-amber-900">Add to Wishlist</DialogTitle>
+          <DialogTitle className="text-amber-900">Add to WishlistQ</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
