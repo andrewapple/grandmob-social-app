@@ -23,12 +23,15 @@ export default function ResetPasswordPage() {
     setSuccess(false)
 
     try {
-      // Safe redirect URL: append /auth/update-password to base env variable
-      const redirectBase = (process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin).replace(/\/$/, "")
-      const redirectTo = `${redirectBase}/auth/update-password`
+      // The callback route will handle the code exchange and then redirect to update-password
+      const redirectBase = (process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin).replace(
+        /\/$/,
+        "",
+      )
+      const redirectTo = `${redirectBase}/auth/callback`
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo
+        redirectTo,
       })
       if (error) throw error
       setSuccess(true)
