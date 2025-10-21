@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,9 +23,12 @@ export default function ResetPasswordPage() {
     setSuccess(false)
 
     try {
+      // Safe redirect URL: append /auth/update-password to base env variable
+      const redirectBase = (process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || window.location.origin).replace(/\/$/, "")
+      const redirectTo = `${redirectBase}/auth/update-password`
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo:
-          process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/auth/update-password`,
+        redirectTo
       })
       if (error) throw error
       setSuccess(true)
