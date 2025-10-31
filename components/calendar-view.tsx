@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { AddEventDialog } from "./add-event-dialog"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { EventDetailsDialog } from "./event-details-dialog"
 
 interface CalendarEvent {
   id: string
@@ -48,6 +48,8 @@ export function CalendarView({ userId }: CalendarViewProps) {
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear())
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
+  const [eventDialogOpen, setEventDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchEvents()
@@ -129,6 +131,11 @@ export function CalendarView({ userId }: CalendarViewProps) {
     } else {
       setSelectedMonth(selectedMonth + 1)
     }
+  }
+
+  const handleEventClick = (event: CalendarEvent) => {
+    setSelectedEvent(event)
+    setEventDialogOpen(true)
   }
 
   return (
@@ -220,24 +227,13 @@ export function CalendarView({ userId }: CalendarViewProps) {
                     <div className="text-xs font-semibold text-amber-900 mb-1">{day}</div>
                     <div className="space-y-1 overflow-y-auto max-h-20">
                       {dayEvents.map((event) => (
-                        <TooltipProvider key={event.id}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="text-xs bg-amber-600 text-white px-1 py-0.5 rounded truncate cursor-default">
-                                {event.event_name}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <div className="text-sm">
-                                <p className="font-semibold">{event.event_name}</p>
-                                <p className="text-xs text-gray-500">By: {event.profiles.name}</p>
-                                {event.event_time && (
-                                  <p className="text-xs">{formatTimeRange(event.event_time, event.end_time)}</p>
-                                )}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
+                        <div
+                          key={event.id}
+                          onClick={() => handleEventClick(event)}
+                          className="text-xs bg-amber-600 text-white px-1 py-0.5 rounded truncate cursor-pointer hover:bg-amber-700 transition-colors"
+                        >
+                          {event.event_name}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -247,6 +243,14 @@ export function CalendarView({ userId }: CalendarViewProps) {
           )}
         </CardContent>
       </Card>
+
+      <EventDetailsDialog
+        event={selectedEvent}
+        currentUserId={userId}
+        open={eventDialogOpen}
+        onOpenChange={setEventDialogOpen}
+        onEventUpdated={fetchEvents}
+      />
     </div>
   )
 }

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Pencil, Check, X, Camera } from "lucide-react"
+import { Pencil, Check, X, Camera, Trash2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { ImageCropDialog } from "./image-crop-dialog"
@@ -144,6 +144,30 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
     }
   }
 
+  const handleDeleteAvatar = async () => {
+    if (!profile) return
+
+    if (!confirm("Are you sure you want to delete your profile photo?")) {
+      return
+    }
+
+    setIsUploadingAvatar(true)
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from("profiles").update({ avatar_url: null }).eq("id", profile.id)
+
+      if (error) throw error
+
+      router.refresh()
+    } catch (error) {
+      console.error("Error deleting avatar:", error)
+      alert("Failed to delete profile photo")
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
+
   const getAnimalAvatar = (id: string) => {
     const animals = ["🦁", "🐼", "🦊", "🐨", "🐸", "🦉", "🐷", "🐮", "🐵", "🐶"]
     const index = Number.parseInt(id.slice(0, 8), 16) % animals.length
@@ -163,7 +187,7 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
                 <AvatarFallback className="text-5xl bg-amber-100">{getAnimalAvatar(profile.id)}</AvatarFallback>
               </Avatar>
               {isOwnProfile && (
-                <div className="absolute bottom-0 right-0">
+                <div className="absolute bottom-0 right-0 flex gap-1">
                   <input
                     type="file"
                     accept="image/*"
@@ -186,6 +210,17 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
                       <Camera className="h-4 w-4" />
                     </Button>
                   </label>
+                  {profile.avatar_url && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-10 w-10 rounded-full bg-red-600 hover:bg-red-700"
+                      disabled={isUploadingAvatar}
+                      onClick={handleDeleteAvatar}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
